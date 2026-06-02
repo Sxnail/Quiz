@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  FAMILY FEUD – MINECRAFT EDITION                        ║
+     ║  Firebase Realtime Database – vollständig synchronisiert ║
+     ╠══════════════════════════════════════════════════════════╣
+     ║  SCHNELLSTART:                                           ║
+     ║  1. Firebase-Projekt anlegen auf firebase.google.com    ║
+     ║  2. Realtime Database aktivieren (Testmodus = 30 Tage)  ║
+     ║  3. FIREBASE_CONFIG unten ausfüllen                     ║
+     ║  4. Auf GitHub Pages hochladen → fertige URL            ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+
+<title>Family Feud – Minecraft Edition</title>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ABSCHNITT 1: FIREBASE KONFIGURATION
+     Trage hier deine Firebase-Daten ein.
+     Findest du unter: Firebase Console → Projekteinstellungen
+     → "Deine Apps" → Web-App → Config
+     ═══════════════════════════════════════════════════════════ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyB1uHpfzK6WMs89_oBt6bVo84q7H-wY8ps",
+    authDomain:        "quiz-23d0f.firebaseapp.com",
+    databaseURL:       "https://quiz-23d0f-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "quiz-23d0f",
+    storageBucket:     "quiz-23d0f.firebasestorage.app",
+    messagingSenderId: "49723431380",
+    appId:             "1:49723431380:web:8ae15b6a04c789e21b1e41"
+  };
+
+  // Firebase initialisieren
+  const app = initializeApp(FIREBASE_CONFIG);
+  const db  = getDatabase(app);
+
+  // Globale Referenz damit der Rest des Codes drauf zugreifen kann
+  window._db  = db;
+  window._ref = ref;
+  window._set = set;
+  window._update = update;
+  window._onValue = onValue;
+  window._firebaseReady = true;
+  window.dispatchEvent(new Event("firebase-ready"));
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     ABSCHNITT 2: FRAGEN & ANTWORTEN
+     Hier kannst du alle Fragen bearbeiten!
+
+     Aufbau einer Frage:
+       text:    Der angezeigte Fragetext
+       answers: Array mit Antworten:
+         text:    Hauptantwort (wird aufgedeckt angezeigt)
+         pts:     Punkte (Zahl)
+         aliases: Weitere gültige Schreibweisen für Tipp-Modus
+                  (Groß/Kleinschreibung egal, Umlaute werden
+                   automatisch normalisiert)
+
+     Frage hinzufügen: Einfach {} Block kopieren & einfügen!
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+const FRAGEN = [
+  // ── FRAGE 1 ──────────────────────────────────────────────
+  {
+    text: "Nenne einen Gegenstand, den fast jeder zuerst in Minecraft craftet.",
+    answers: [
+      { text: "Crafting Table",  pts: 38, aliases: ["werkbank", "crafting bench"] },
+      { text: "Holzschwert",     pts: 24, aliases: ["wooden sword", "schwert"] },
+      { text: "Bett",            pts: 17, aliases: ["bed"] },
+      { text: "Fackel",          pts: 12, aliases: ["torch", "torche"] },
+      { text: "Ofen",            pts:  9, aliases: ["furnace"] },
+    ]
+  },
+  // ── FRAGE 2 ──────────────────────────────────────────────
+  {
+    text: "Welches Mob nervt Minecraft-Spieler am meisten?",
+    answers: [
+      { text: "Creeper",   pts: 42, aliases: [] },
+      { text: "Enderman",  pts: 22, aliases: ["endermen"] },
+      { text: "Zombie",    pts: 16, aliases: [] },
+      { text: "Skeleton",  pts: 13, aliases: ["skelett"] },
+      { text: "Phantom",   pts:  7, aliases: [] },
+    ]
+  },
+  // ── FRAGE 3 ──────────────────────────────────────────────
+  {
+    text: "Welches Biom mögen Spieler am meisten?",
+    answers: [
+      { text: "Wald",      pts: 35, aliases: ["forest", "birkenwald"] },
+      { text: "Ebene",     pts: 28, aliases: ["plains"] },
+      { text: "Strand",    pts: 19, aliases: ["beach"] },
+      { text: "Dschungel", pts: 12, aliases: ["jungle"] },
+      { text: "Gebirge",   pts:  6, aliases: ["mountains", "berge"] },
+    ]
+  },
+  // ── FRAGE 4 ──────────────────────────────────────────────
+  {
+    text: "Aus welchem Material baut man in Minecraft am liebsten Rüstungen?",
+    answers: [
+      { text: "Diamant",   pts: 40, aliases: ["diamond"] },
+      { text: "Eisen",     pts: 30, aliases: ["iron"] },
+      { text: "Netherit",  pts: 15, aliases: ["netherite"] },
+      { text: "Gold",      pts: 10, aliases: ["golden"] },
+      { text: "Leder",     pts:  5, aliases: ["leather"] },
+    ]
+  },
+
+  // ════════════════════════════════════════════════════════
+  // ↓ HIER EIGENE FRAGEN EINFÜGEN – diesen Block kopieren:
+  //
+  // {
+  //   text: "Deine Frage?",
+  //   answers: [
+  //     { text: "Antwort 1", pts: 40, aliases: ["alternative"] },
+  //     { text: "Antwort 2", pts: 30, aliases: [] },
+  //     { text: "Antwort 3", pts: 20, aliases: [] },
+  //     { text: "Antwort 4", pts: 10, aliases: [] },
+  //   ]
+  // },
+  // ════════════════════════════════════════════════════════
+];
+
+
+// ═══════════════════════════════════════════════════════════
+// ABSCHNITT 3: DESIGN-EINSTELLUNGEN
+// Farben, Schriften, Seitenname – hier anpassen!
+// ═══════════════════════════════════════════════════════════
+
+const DESIGN = {
+  // Seitenname oben im Header
+  seitenName:   "Family Feud",
+  // Untertitel
+  untertitel:   "Minecraft Edition",
+
+  // Farben – CSS-Farbwerte (Hex, rgb(), hsl() etc.)
+  farben: {
+    hintergrund:    "#0a0a1a",   // Seiten-Hintergrund (sehr dunkles Blau-Schwarz)
+    primary:        "#FFD700",   // Goldgelb – Hauptakzentfarbe
+    primaryDunkel:  "#b8960a",   // Dunkleres Gold für Hover/Schatten
+    sekundaer:      "#1a1a3e",   // Kachelfarbe (dunkles Blau)
+    sekundaerHell:  "#2a2a5e",   // Kachel Hover
+    aufgedeckt:     "#0d3d1a",   // Aufgedeckte Antwort (dunkles Grün)
+    aufgedecktRand: "#22c55e",   // Rand aufgedeckte Antwort
+    strike:         "#dc2626",   // Strike-Rot
+    headerVon:      "#FFD700",   // Header-Gradient Start
+    headerBis:      "#f97316",   // Header-Gradient Ende
+    headerText:     "#0a0a1a",   // Text im Header
+    teamEins:       "#3b82f6",   // Farbe Team 1 (Blau)
+    teamZwei:       "#ef4444",   // Farbe Team 2 (Rot)
+  }
+};
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     ABSCHNITT 4: STYLES
+     Hier sind die CSS-Stile. Fortgeschrittene Anpassungen
+     kannst du hier vornehmen.
+     ═══════════════════════════════════════════════════════════ -->
+<style>
+  /* Google Font laden */
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500&display=swap');
+
+  /* CSS-Variablen – werden per JS aus DESIGN befüllt */
+  :root {
+    --bg:           #0a0a1a;
+    --primary:      #FFD700;
+    --primary-dark: #b8960a;
+    --card:         #1a1a3e;
+    --card-hover:   #2a2a5e;
+    --revealed:     #0d3d1a;
+    --rev-border:   #22c55e;
+    --strike:       #dc2626;
+    --hdr-from:     #FFD700;
+    --hdr-to:       #f97316;
+    --hdr-text:     #0a0a1a;
+    --t1:           #3b82f6;
+    --t2:           #ef4444;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Barlow', sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+    /* Dezentes Raster-Muster im Hintergrund */
+    background-image:
+      linear-gradient(rgba(255,215,0,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,215,0,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ── Screens ─────────────────────────────────────── */
+  .screen { display: none; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── Header ──────────────────────────────────────── */
+  .hdr {
+    background: linear-gradient(135deg, var(--hdr-from), var(--hdr-to));
+    text-align: center;
+    padding: 10px 20px 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Schimmer-Overlay im Header */
+  .hdr::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.15) 50%, transparent 100%);
+    animation: shimmer 3s infinite;
+  }
+  @keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+  .hdr-inner { position: relative; z-index: 1; }
+  .hdr-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 6px;
+    color: var(--hdr-text);
+    text-shadow: 2px 3px 0 rgba(0,0,0,.3);
+    line-height: 1;
+  }
+  .hdr-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: 4px;
+    color: var(--hdr-text);
+    opacity: .7;
+    text-transform: uppercase;
+  }
+
+  /* ── Score-Leiste ────────────────────────────────── */
+  .score-bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: rgba(0,0,0,.4);
+    border-bottom: 1px solid rgba(255,215,0,.15);
+    backdrop-filter: blur(4px);
+  }
+  .team-block { display: flex; flex-direction: column; gap: 2px; }
+  .team-block.right { align-items: flex-end; }
+  .team-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: .7;
+  }
+  .team-score-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .team-block:first-child .team-score-num { color: var(--t1); }
+  .team-block:last-child  .team-score-num  { color: var(--t2); }
+  /* Aktives Team – aufleuchten */
+  .team-block.active .team-name { opacity: 1; }
+  .team-block.active .team-score-num { filter: drop-shadow(0 0 8px currentColor); }
+
+  .round-center { text-align: center; }
+  .round-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--primary);
+    opacity: .7;
+  }
+  .round-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    color: var(--primary);
+    letter-spacing: 2px;
+  }
+  .pot-display {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .75rem;
+    letter-spacing: 2px;
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* ── Frage ───────────────────────────────────────── */
+  .question-wrap { padding: 12px 20px 6px; }
+  .question-box {
+    background: rgba(255,215,0,.06);
+    border: 1.5px solid rgba(255,215,0,.25);
+    border-radius: 6px;
+    padding: 12px 20px;
+    text-align: center;
+  }
+  .question-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .65rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--primary);
+    opacity: .6;
+    margin-bottom: 4px;
+  }
+  .question-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #fff;
+  }
+
+  /* ── Antwort-Grid ────────────────────────────────── */
+  .answers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 8px 20px;
+    flex: 1;
+  }
+  .answer-tile {
+    background: var(--card);
+    border: 1.5px solid rgba(255,255,255,.07);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    height: 60px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, transform .1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .answer-tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.03), transparent);
+    transform: translateX(-100%);
+    transition: transform .4s;
+  }
+  .answer-tile:hover:not(.revealed):not(.locked) {
+    background: var(--card-hover);
+    border-color: rgba(255,215,0,.3);
+    transform: scale(1.01);
+  }
+  .answer-tile:hover:not(.revealed):not(.locked)::before { transform: translateX(100%); }
+
+  .answer-tile.revealed {
+    background: var(--revealed);
+    border-color: var(--rev-border);
+    cursor: default;
+    animation: revealPop .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes revealPop {
+    0%   { transform: scale(.94); opacity: .5; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+  .answer-tile.locked { cursor: default; opacity: .6; }
+
+  .tile-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    color: var(--primary);
+    min-width: 22px;
+    opacity: .7;
+  }
+  .tile-dots {
+    display: flex; gap: 5px; align-items: center; flex: 1;
+  }
+  .dot { width: 7px; height: 7px; background: rgba(255,255,255,.2); border-radius: 50%; }
+  .tile-answer {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex: 1;
+  }
+  .tile-pts {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    color: var(--primary);
+    letter-spacing: 1px;
+  }
+
+  /* ── Strikes ─────────────────────────────────────── */
+  .strikes-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 6px 0;
+  }
+  .strike-x {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    color: rgba(255,255,255,.12);
+    line-height: 1;
+    transition: color .2s, filter .2s;
+  }
+  .strike-x.active {
+    color: var(--strike);
+    filter: drop-shadow(0 0 12px var(--strike));
+    animation: strikePop .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes strikePop {
+    0%   { transform: scale(2) rotate(-10deg); opacity: 0; }
+    60%  { transform: scale(.9) rotate(3deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  /* ── Tipp-Eingabe ────────────────────────────────── */
+  .input-row {
+    display: flex;
+    gap: 8px;
+    padding: 6px 20px;
+    align-items: center;
+  }
+  .ans-input {
+    flex: 1;
+    background: rgba(255,255,255,.05);
+    border: 1.5px solid rgba(255,215,0,.25);
+    border-radius: 5px;
+    color: #fff;
+    padding: 10px 14px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .ans-input:focus { border-color: var(--primary); }
+  .ans-input::placeholder { text-transform: none; font-size: 1rem; opacity: .4; letter-spacing: 0; font-weight: 400; }
+  .input-result {
+    padding: 3px 20px;
+    min-height: 24px;
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: color .2s;
+  }
+
+  /* ── Steuerungs-Leiste ───────────────────────────── */
+  .ctrl-bar {
+    padding: 8px 20px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    border-top: 1px solid rgba(255,255,255,.06);
+  }
+
+  /* ── Buttons ─────────────────────────────────────── */
+  button {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: .9rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 9px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform .1s, filter .15s;
+    white-space: nowrap;
+  }
+  button:hover  { filter: brightness(1.15); transform: translateY(-2px); }
+  button:active { transform: translateY(0);  filter: brightness(.95); }
+
+  /* Button-Varianten */
+  .b-strike { background: var(--strike);    color: #fff; }
+  .b-award1 { background: var(--t1);        color: #fff; }
+  .b-award2 { background: var(--t2);        color: #fff; }
+  .b-next   { background: #16a34a;          color: #fff; }
+  .b-prev   { background: rgba(255,255,255,.1); color: #fff; }
+  .b-reset  { background: #7f1d1d;          color: #fff; }
+  .b-mode   { background: rgba(255,215,0,.15); color: var(--primary); border: 1px solid rgba(255,215,0,.3); }
+  .b-setup  { background: rgba(255,255,255,.08); color: #fff; }
+  .b-big    {
+    background: linear-gradient(135deg, var(--primary), #f97316);
+    color: #0a0a1a;
+    font-size: 1.1rem;
+    padding: 13px 36px;
+    font-weight: 900;
+    letter-spacing: 3px;
+  }
+  .b-danger { background: #7f1d1d; color: #fff; }
+
+  /* ── Modus-Badge ─────────────────────────────────── */
+  .mode-badge {
+    text-align: center;
+    padding: 2px 0;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.3);
+  }
+  .mode-badge span { color: var(--primary); }
+
+  /* ── Status-Pill ─────────────────────────────────── */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,.4);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 99px;
+    padding: 4px 12px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.5);
+    margin: 4px auto 0;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: pulse 2s infinite;
+  }
+  .status-dot.offline { background: #ef4444; animation: none; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .3; }
+  }
+
+  /* ── Flash-Overlay ───────────────────────────────── */
+  .flash-overlay {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 999;
+  }
+  .flash-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 5rem;
+    letter-spacing: 6px;
+    opacity: 0;
+    transform: scale(.4);
+    transition: opacity .15s, transform .2s cubic-bezier(.34,1.56,.64,1);
+  }
+  .flash-text.show { opacity: 1; transform: scale(1); }
+  .flash-text.red   { color: var(--strike); text-shadow: 0 0 30px var(--strike); }
+  .flash-text.green { color: #22c55e;        text-shadow: 0 0 30px #22c55e; }
+
+  /* ── Setup-Screen ────────────────────────────────── */
+  #s-setup {
+    background: var(--bg);
+    justify-content: center;
+    align-items: center;
+    padding: 24px 16px;
+  }
+  .setup-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,215,0,.2);
+    border-radius: 12px;
+    padding: 28px;
+    max-width: 660px;
+    width: 100%;
+    backdrop-filter: blur(8px);
+  }
+  .setup-logo {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .setup-logo-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    letter-spacing: 6px;
+    background: linear-gradient(135deg, var(--primary), #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .setup-logo-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .7rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.3);
+    margin-top: 2px;
+  }
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--primary);
+    opacity: .7;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,215,0,.15);
+  }
+  label {
+    display: block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.4);
+    margin-bottom: 5px;
+  }
+  input[type=text], select {
+    width: 100%;
+    background: rgba(255,255,255,.05);
+    border: 1.5px solid rgba(255,255,255,.1);
+    border-radius: 5px;
+    color: #fff;
+    padding: 9px 12px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    transition: border-color .2s;
+  }
+  input[type=text]:focus, select:focus { outline: none; border-color: var(--primary); }
+  select option { background: #1a1a3e; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .firebase-note {
+    background: rgba(255,215,0,.06);
+    border: 1px solid rgba(255,215,0,.2);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: .85rem;
+    line-height: 1.6;
+    color: rgba(255,255,255,.55);
+    margin-top: 14px;
+  }
+  .firebase-note strong { color: var(--primary); }
+  .firebase-note code {
+    background: rgba(0,0,0,.3);
+    color: var(--primary);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: .8rem;
+  }
+
+  /* Firebase Verbindungs-Anzeige */
+  .fb-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-bottom: 14px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .85rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .fb-status.ok   { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); color: #22c55e; }
+  .fb-status.warn { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #ef4444; }
+  .fb-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .fb-status.ok   .fb-dot { background: #22c55e; }
+  .fb-status.warn .fb-dot { background: #ef4444; }
+
+  /* ── Gewinner-Screen ─────────────────────────────── */
+  #s-win {
+    background: radial-gradient(ellipse at center, rgba(255,215,0,.08) 0%, var(--bg) 70%);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 24px;
+  }
+  .win-card {
+    background: rgba(255,255,255,.04);
+    border: 2px solid var(--primary);
+    border-radius: 16px;
+    padding: 48px 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .win-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--primary), #f97316, var(--primary));
+    z-index: -1;
+    animation: rotateBorder 3s linear infinite;
+  }
+  @keyframes rotateBorder {
+    0%   { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+  }
+  .win-trophy { font-size: 3rem; margin-bottom: 8px; }
+  .win-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .7rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.4);
+    margin-bottom: 6px;
+  }
+  .win-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem;
+    letter-spacing: 6px;
+    background: linear-gradient(135deg, var(--primary), #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .win-score {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.6);
+    margin-top: 8px;
+    letter-spacing: 2px;
+  }
+  .win-btns { display: flex; gap: 12px; justify-content: center; margin-top: 28px; }
+</style>
+</head>
+<body>
+
+<!-- Flash-Overlay (Richtig / Falsch Anzeige) -->
+<div class="flash-overlay">
+  <div class="flash-text" id="flashEl"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SETUP-SCREEN – Nur der Moderator sieht diesen Screen
+     ═══════════════════════════════════════════════════════════ -->
+<div class="screen active" id="s-setup">
+  <div class="setup-card">
+
+    <div class="setup-logo">
+      <div class="setup-logo-title" id="setupTitle">Family Feud</div>
+      <div class="setup-logo-sub" id="setupSub">Minecraft Edition</div>
+    </div>
+
+    <!-- Firebase-Status -->
+    <div class="fb-status warn" id="fbStatus">
+      <div class="fb-dot"></div>
+      <span id="fbStatusText">Firebase nicht verbunden – bitte Config prüfen</span>
+    </div>
+
+    <!-- Team-Namen -->
+    <div class="section-title">Teams</div>
+    <div class="grid-2">
+      <div>
+        <label>Team 1 Name</label>
+        <input type="text" id="t1name" value="Team Blau" />
+      </div>
+      <div>
+        <label>Team 2 Name</label>
+        <input type="text" id="t2name" value="Team Rot" />
+      </div>
+    </div>
+
+    <!-- Spieleinstellungen -->
+    <div class="section-title">Spieleinstellungen</div>
+    <div class="grid-2">
+      <div>
+        <label>Spielmodus</label>
+        <select id="modeSelect">
+          <option value="reveal">Aufdecken – Moderator deckt auf</option>
+          <option value="input">Tipp-Modus – Spieler tippen Antworten</option>
+        </select>
+      </div>
+      <div>
+        <label>Starten bei Frage</label>
+        <select id="startQ"></select>
+      </div>
+    </div>
+
+    <!-- Firebase Hinweis -->
+    <div class="firebase-note">
+      <strong>Firebase einrichten:</strong> Trage deine Zugangsdaten ganz oben im
+      <code>&lt;script&gt;</code>-Block ein (<code>FIREBASE_CONFIG</code>).
+      Dann lädt jeder Spieler die gleiche URL und sieht alles synchron.<br><br>
+      <strong>Fragen ändern:</strong> Im <code>FRAGEN</code>-Array weiter unten im Code.
+      Einfach Blöcke kopieren &amp; einfügen!
+    </div>
+
+    <div style="text-align:center; margin-top:20px;">
+      <button class="b-big" onclick="startSpiel()">SPIEL STARTEN ▶</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SPIEL-SCREEN – Alle Spieler sehen diesen Screen
+     ═══════════════════════════════════════════════════════════ -->
+<div class="screen" id="s-game">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-inner">
+      <div class="hdr-title" id="gameTitle">Family Feud</div>
+      <div class="hdr-sub"   id="gameSub">Minecraft Edition</div>
+    </div>
+  </div>
+
+  <!-- Score-Leiste -->
+  <div class="score-bar">
+    <div class="team-block" id="tb1">
+      <div class="team-name" id="g-t1n">Team 1</div>
+      <div class="team-score-num" id="g-t1p">0</div>
+    </div>
+    <div class="round-center">
+      <div class="round-label">Runde</div>
+      <div class="round-num" id="g-rnd">1 / 1</div>
+      <div class="pot-display">POT: <span id="g-pot">0</span></div>
+    </div>
+    <div class="team-block right" id="tb2">
+      <div class="team-name" id="g-t2n">Team 2</div>
+      <div class="team-score-num" id="g-t2p">0</div>
+    </div>
+  </div>
+
+  <!-- Verbindungs-Status -->
+  <div style="display:flex; justify-content:center; padding: 4px 0;">
+    <div class="status-pill">
+      <div class="status-dot" id="connDot"></div>
+      <span id="connText">Verbinde...</span>
+    </div>
+  </div>
+
+  <!-- Modus-Anzeige -->
+  <div class="mode-badge">Modus: <span id="g-mode">Aufdecken</span></div>
+
+  <!-- Frage -->
+  <div class="question-wrap">
+    <div class="question-box">
+      <div class="question-label">Umfrage-Frage</div>
+      <div class="question-text" id="g-qtxt">Laden...</div>
+    </div>
+  </div>
+
+  <!-- Antwort-Kacheln -->
+  <div class="answers-grid" id="g-grid"></div>
+
+  <!-- Tipp-Eingabe (nur im Tipp-Modus sichtbar) -->
+  <div id="g-inputrow" style="display:none;">
+    <div class="input-row">
+      <input
+        class="ans-input"
+        id="g-inp"
+        type="text"
+        placeholder="Antwort eingeben und Enter drücken…"
+        autocomplete="off"
+      />
+      <button class="b-mode" onclick="checkInput()">Prüfen ↵</button>
+    </div>
+    <div class="input-result" id="g-inpResult"></div>
+  </div>
+
+  <!-- Strikes -->
+  <div class="strikes-row">
+    <div class="strike-x" id="sx1">✕</div>
+    <div class="strike-x" id="sx2">✕</div>
+    <div class="strike-x" id="sx3">✕</div>
+  </div>
+
+  <!-- Steuerung (Moderator-Buttons) -->
+  <div class="ctrl-bar">
+    <!-- Strikes -->
+    <button class="b-strike" onclick="pushStrike()">✕ Strike</button>
+
+    <!-- Punkte vergeben -->
+    <button class="b-award1" id="b-award1" onclick="pushAward(0)">🏆 → Team 1</button>
+    <button class="b-award2" id="b-award2" onclick="pushAward(1)">🏆 → Team 2</button>
+
+    <!-- Navigation -->
+    <button class="b-next"  onclick="pushNext()">Nächste Runde ▶</button>
+    <button class="b-prev"  onclick="pushPrev()">◀ Zurück</button>
+
+    <!-- Hilfsfunktionen -->
+    <button class="b-mode"  onclick="pushToggleMode()">⇄ Modus wechseln</button>
+    <button class="b-reset" onclick="pushResetRunde()">↺ Runde reset</button>
+    <button class="b-setup" onclick="zeigeSetup()">✎ Setup</button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     GEWINNER-SCREEN
+     ═══════════════════════════════════════════════════════════ -->
+<div class="screen" id="s-win">
+  <div class="win-card">
+    <div class="win-trophy">🏆</div>
+    <div class="win-label">Gewinner</div>
+    <div class="win-name"  id="w-name">–</div>
+    <div class="win-score" id="w-score">0 Punkte</div>
+    <div class="win-btns">
+      <button class="b-big"   onclick="pushNeuesSpiel()">Neues Spiel</button>
+      <button class="b-setup" onclick="zeigeSetup()">Setup</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     ABSCHNITT 5: SPIELLOGIK
+     Hier passiert die Magie. Nur ändern wenn du weißt was du tust!
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+// ── Hilfsfunktionen ───────────────────────────────────────────────────
+
+// Normalisiert Text für Vergleiche (Umlaute, Groß/Klein, Sonderzeichen)
+function norm(s) {
+  return s.trim().toLowerCase()
+    .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ');
+}
+
+// CSS-Variablen aus DESIGN-Objekt setzen
+function designAnwenden() {
+  const r = document.documentElement.style;
+  const f = DESIGN.farben;
+  r.setProperty('--bg',          f.hintergrund);
+  r.setProperty('--primary',     f.primary);
+  r.setProperty('--primary-dark',f.primaryDunkel);
+  r.setProperty('--card',        f.sekundaer);
+  r.setProperty('--card-hover',  f.sekundaerHell);
+  r.setProperty('--revealed',    f.aufgedeckt);
+  r.setProperty('--rev-border',  f.aufgedecktRand);
+  r.setProperty('--strike',      f.strike);
+  r.setProperty('--hdr-from',    f.headerVon);
+  r.setProperty('--hdr-to',      f.headerBis);
+  r.setProperty('--hdr-text',    f.headerText);
+  r.setProperty('--t1',          f.teamEins);
+  r.setProperty('--t2',          f.teamZwei);
+
+  // Seitentitel setzen
+  document.title = DESIGN.seitenName + ' – ' + DESIGN.untertitel;
+  document.getElementById('setupTitle').textContent = DESIGN.seitenName;
+  document.getElementById('setupSub').textContent   = DESIGN.untertitel;
+  document.getElementById('gameTitle').textContent  = DESIGN.seitenName;
+  document.getElementById('gameSub').textContent    = DESIGN.untertitel;
+}
+
+// Screen wechseln
+function zeige(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// Flash-Animation (Richtig/Falsch)
+function flash(text, typ /* 'red' | 'green' */) {
+  const el = document.getElementById('flashEl');
+  el.textContent = text;
+  el.className = 'flash-text ' + typ;
+  void el.offsetWidth; // reflow erzwingen
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 900);
+}
+
+
+// ── Firebase State Management ─────────────────────────────────────────
+// Der gesamte Spielstand wird in Firebase gespeichert.
+// Wenn sich etwas ändert, bekommt jeder Client sofort ein Update.
+
+let fbReady = false;
+
+// Initialer Spielstand
+function initialerState(teamNames) {
+  return {
+    screen:      'game',        // 'game' | 'win'
+    runde:       0,             // aktueller Fragen-Index
+    strikes:     0,             // aktuelle Strikes (0-3)
+    pot:         0,             // Punkte im Topf
+    scores:      [0, 0],        // Punkte Team 1 und 2
+    teamNames:   teamNames,     // ['Team 1', 'Team 2']
+    modus:       'reveal',      // 'reveal' | 'input'
+    aufgedeckt:  FRAGEN.map(q => new Array(q.answers.length).fill(false)),
+    aktivTeam:   0,             // welches Team gerade dran ist (0 oder 1)
+    gewinner:    -1,            // -1 = kein Gewinner, 0 oder 1 = Gewinner
+  };
+}
+
+// State in Firebase schreiben
+function fbSchreibe(state) {
+  if (!fbReady) { console.warn('Firebase nicht bereit'); return; }
+  window._set(window._ref(window._db, 'spiel'), state);
+}
+
+// Einzelne Felder updaten (effizienter)
+function fbUpdate(changes) {
+  if (!fbReady) { console.warn('Firebase nicht bereit'); return; }
+  window._update(window._ref(window._db, 'spiel'), changes);
+}
+
+// Auf State-Änderungen hören und UI aktualisieren
+let letzterState = null;
+function fbHoere() {
+  if (!fbReady) return;
+  window._onValue(window._ref(window._db, 'spiel'), snap => {
+    const state = snap.val();
+    if (!state) return;
+    letzterState = state;
+    renderSpiel(state);
+  });
+}
+
+
+// ── UI rendern ────────────────────────────────────────────────────────
+function renderSpiel(s) {
+  // Screen
+  if (s.screen === 'win') {
+    zeigeGewinner(s);
+    return;
+  }
+  zeige('s-game');
+
+  // Teams
+  document.getElementById('g-t1n').textContent = s.teamNames[0];
+  document.getElementById('g-t2n').textContent = s.teamNames[1];
+  document.getElementById('g-t1p').textContent = s.scores[0];
+  document.getElementById('g-t2p').textContent = s.scores[1];
+  document.getElementById('b-award1').textContent = '🏆 → ' + s.teamNames[0];
+  document.getElementById('b-award2').textContent = '🏆 → ' + s.teamNames[1];
+
+  // Aktives Team hervorheben
+  document.getElementById('tb1').classList.toggle('active', s.aktivTeam === 0);
+  document.getElementById('tb2').classList.toggle('active', s.aktivTeam === 1);
+
+  // Runde & Pot
+  document.getElementById('g-rnd').textContent = (s.runde + 1) + ' / ' + FRAGEN.length;
+  document.getElementById('g-pot').textContent = s.pot;
+
+  // Modus
+  document.getElementById('g-mode').textContent = s.modus === 'input' ? 'Tipp-Modus' : 'Aufdecken';
+
+  // Frage
+  const frage = FRAGEN[s.runde];
+  document.getElementById('g-qtxt').textContent = frage.text;
+
+  // Tipp-Eingabe zeigen/verstecken
+  const inputRow = document.getElementById('g-inputrow');
+  inputRow.style.display = s.modus === 'input' ? 'block' : 'none';
+
+  // Strikes
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById('sx' + i).classList.toggle('active', i <= s.strikes);
+  }
+
+  // Antwort-Kacheln aufbauen
+  const grid = document.getElementById('g-grid');
+  grid.innerHTML = '';
+  frage.answers.forEach((a, ai) => {
+    const aufgedeckt = s.aufgedeckt[s.runde] && s.aufgedeckt[s.runde][ai];
+    const tile = document.createElement('div');
+    tile.className = 'answer-tile' + (aufgedeckt ? ' revealed' : '');
+
+    if (aufgedeckt) {
+      // Aufgedeckte Antwort anzeigen
+      tile.innerHTML =
+        '<span class="tile-num">' + (ai + 1) + '.</span>' +
+        '<span class="tile-answer">' + a.text + '</span>' +
+        '<span class="tile-pts">' + a.pts + '</span>';
+    } else if (s.modus === 'reveal') {
+      // Im Aufdecken-Modus: Klick deckt auf
+      tile.innerHTML =
+        '<span class="tile-num">' + (ai + 1) + '.</span>' +
+        '<span class="tile-dots">' +
+          '<span class="dot"></span><span class="dot"></span>' +
+          '<span class="dot"></span><span class="dot"></span>' +
+        '</span>';
+      tile.onclick = () => pushAufdecken(ai);
+    } else {
+      // Im Tipp-Modus: gesperrt (wird durch Eingabe aufgedeckt)
+      tile.className += ' locked';
+      tile.innerHTML =
+        '<span class="tile-num">' + (ai + 1) + '.</span>' +
+        '<span class="tile-dots">' +
+          '<span class="dot"></span><span class="dot"></span>' +
+          '<span class="dot"></span>' +
+        '</span>';
+    }
+    grid.appendChild(tile);
+  });
+}
+
+function zeigeGewinner(s) {
+  const w = s.gewinner >= 0 ? s.gewinner
+    : (s.scores[0] >= s.scores[1] ? 0 : 1);
+  document.getElementById('w-name').textContent  = s.teamNames[w];
+  document.getElementById('w-score').textContent = s.scores[w] + ' Punkte';
+  zeige('s-win');
+}
+
+
+// ── Moderator-Aktionen (schreiben nach Firebase) ──────────────────────
+
+// Antwort aufdecken
+function pushAufdecken(antwortIndex) {
+  if (!letzterState) return;
+  const s = letzterState;
+  // Kopie der aufgedeckten-Tabelle
+  const neu = s.aufgedeckt.map(r => [...r]);
+  if (neu[s.runde][antwortIndex]) return; // schon aufgedeckt
+  neu[s.runde][antwortIndex] = true;
+  const pts = FRAGEN[s.runde].answers[antwortIndex].pts;
+  fbUpdate({
+    aufgedeckt: neu,
+    pot: s.pot + pts
+  });
+}
+
+// Strike hinzufügen
+function pushStrike() {
+  if (!letzterState) return;
+  const s = letzterState;
+  if (s.strikes >= 3) return;
+  fbUpdate({ strikes: s.strikes + 1 });
+  flash('FALSCH!', 'red');
+}
+
+// Pot an Team vergeben
+function pushAward(teamIdx) {
+  if (!letzterState) return;
+  const s = letzterState;
+  const neueScores = [...s.scores];
+  neueScores[teamIdx] += s.pot;
+  fbUpdate({
+    scores:    neueScores,
+    pot:       0,
+    aktivTeam: teamIdx,  // Team das Punkte bekam ist jetzt aktiv
+  });
+}
+
+// Nächste Runde
+function pushNext() {
+  if (!letzterState) return;
+  const s = letzterState;
+  if (s.runde >= FRAGEN.length - 1) {
+    // Letztes Spiel – Gewinner ermitteln
+    const w = s.scores[0] >= s.scores[1] ? 0 : 1;
+    fbUpdate({ screen: 'win', gewinner: w });
+    return;
+  }
+  fbUpdate({
+    runde:   s.runde + 1,
+    strikes: 0,
+    pot:     0,
+  });
+}
+
+// Vorherige Runde
+function pushPrev() {
+  if (!letzterState) return;
+  const s = letzterState;
+  if (s.runde <= 0) return;
+  fbUpdate({ runde: s.runde - 1, strikes: 0, pot: 0 });
+}
+
+// Modus wechseln
+function pushToggleMode() {
+  if (!letzterState) return;
+  const neuerModus = letzterState.modus === 'reveal' ? 'input' : 'reveal';
+  fbUpdate({ modus: neuerModus });
+  if (neuerModus === 'input') {
+    setTimeout(() => {
+      const inp = document.getElementById('g-inp');
+      if (inp) inp.focus();
+    }, 100);
+  }
+}
+
+// Runde zurücksetzen
+function pushResetRunde() {
+  if (!letzterState) return;
+  const s = letzterState;
+  const neu = s.aufgedeckt.map(r => [...r]);
+  neu[s.runde] = new Array(FRAGEN[s.runde].answers.length).fill(false);
+  fbUpdate({ aufgedeckt: neu, strikes: 0, pot: 0 });
+}
+
+// Neues Spiel
+function pushNeuesSpiel() {
+  if (!letzterState) return;
+  const fresh = initialerState(letzterState.teamNames);
+  fbSchreibe(fresh);
+}
+
+
+// ── Tipp-Modus: Eingabe prüfen ────────────────────────────────────────
+function checkInput() {
+  const inp = document.getElementById('g-inp');
+  const val = inp.value;
+  if (!val.trim() || !letzterState) return;
+
+  const s = letzterState;
+  const frage = FRAGEN[s.runde];
+  const eingabe = norm(val);
+  let gefunden = -1;
+
+  for (let ai = 0; ai < frage.answers.length; ai++) {
+    if (s.aufgedeckt[s.runde][ai]) continue; // schon aufgedeckt → überspringen
+    const kandidaten = [frage.answers[ai].text, ...(frage.answers[ai].aliases || [])].map(norm);
+    if (kandidaten.some(k => k === eingabe || k.includes(eingabe) || eingabe.includes(k))) {
+      gefunden = ai;
+      break;
+    }
+  }
+
+  const resultEl = document.getElementById('g-inpResult');
+
+  if (gefunden >= 0) {
+    // Richtig!
+    const pts = frage.answers[gefunden].pts;
+    pushAufdecken(gefunden);
+    flash('+' + pts + ' PUNKTE!', 'green');
+    resultEl.style.color = '#22c55e';
+    resultEl.textContent = '✓ "' + frage.answers[gefunden].text + '" – ' + pts + ' Punkte!';
+  } else {
+    // Falsch
+    flash('FALSCH!', 'red');
+    resultEl.style.color = '#ef4444';
+    resultEl.textContent = '✗ Nicht gefunden – Strike vergeben?';
+  }
+
+  inp.value = '';
+  inp.focus();
+}
+
+// Enter-Taste im Tipp-Modus abfangen
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const inp = document.getElementById('g-inp');
+    if (document.activeElement === inp) checkInput();
+  }
+});
+
+
+// ── Setup → Spiel starten ─────────────────────────────────────────────
+function startSpiel() {
+  const t1 = document.getElementById('t1name').value.trim() || 'Team Blau';
+  const t2 = document.getElementById('t2name').value.trim() || 'Team Rot';
+  const modus  = document.getElementById('modeSelect').value;
+  const startQ = parseInt(document.getElementById('startQ').value) || 0;
+
+  const state = initialerState([t1, t2]);
+  state.modus = modus;
+  state.runde = startQ;
+
+  fbSchreibe(state);
+}
+
+function zeigeSetup() {
+  zeige('s-setup');
+}
+
+
+// ── Initialisierung ───────────────────────────────────────────────────
+function init() {
+  // Design anwenden
+  designAnwenden();
+
+  // Fragen-Dropdown im Setup befüllen
+  const sel = document.getElementById('startQ');
+  FRAGEN.forEach((f, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = 'Frage ' + (i + 1) + ': ' + f.text.substring(0, 48) + '…';
+    sel.appendChild(opt);
+  });
+
+  // Firebase-Status prüfen
+  if (window._firebaseReady) {
+    onFirebaseReady();
+  } else {
+    window.addEventListener('firebase-ready', onFirebaseReady);
+    // Timeout: wenn Firebase nach 4s nicht reagiert → Fehlermeldung
+    setTimeout(() => {
+      if (!fbReady) {
+        document.getElementById('fbStatus').className = 'fb-status warn';
+        document.getElementById('fbStatusText').textContent =
+          'Firebase-Verbindung fehlgeschlagen – bitte FIREBASE_CONFIG prüfen';
+      }
+    }, 4000);
+  }
+}
+
+function onFirebaseReady() {
+  fbReady = true;
+
+  // Verbindungsstatus in Firebase überwachen
+  const connRef = window._ref(window._db, '.info/connected');
+  window._onValue(connRef, snap => {
+    const online = snap.val() === true;
+    // Setup-Screen Badge
+    document.getElementById('fbStatus').className = online ? 'fb-status ok' : 'fb-status warn';
+    document.getElementById('fbStatusText').textContent = online
+      ? 'Firebase verbunden ✓ – Synchronisation aktiv'
+      : 'Firebase getrennt – Verbindung wird wiederhergestellt…';
+    // Game-Screen Badge
+    const dot = document.getElementById('connDot');
+    if (dot) dot.className = 'status-dot' + (online ? '' : ' offline');
+    const ct = document.getElementById('connText');
+    if (ct) ct.textContent = online ? 'Live – synchronisiert' : 'Verbindung unterbrochen';
+  });
+
+  // Auf Spielstand-Änderungen hören
+  fbHoere();
+}
+
+// Starten wenn DOM bereit
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
