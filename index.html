@@ -3,26 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Show</title>
 
-<!-- ╔══════════════════════════════════════════════════════════╗
-     ║  FAMILY FEUD – MINECRAFT EDITION                        ║
-     ║  Firebase Realtime Database – vollständig synchronisiert ║
-     ╠══════════════════════════════════════════════════════════╣
-     ║  SCHNELLSTART:                                           ║
-     ║  1. Firebase-Projekt anlegen auf firebase.google.com    ║
-     ║  2. Realtime Database aktivieren (Testmodus = 30 Tage)  ║
-     ║  3. FIREBASE_CONFIG unten ausfüllen                     ║
-     ║  4. Auf GitHub Pages hochladen → fertige URL            ║
-     ╚══════════════════════════════════════════════════════════╝ -->
-
-<title>Family Feud – Minecraft Edition</title>
-
-<!-- ═══════════════════════════════════════════════════════════
-     ABSCHNITT 1: FIREBASE KONFIGURATION
-     Trage hier deine Firebase-Daten ein.
-     Findest du unter: Firebase Console → Projekteinstellungen
-     → "Deine Apps" → Web-App → Config
-     ═══════════════════════════════════════════════════════════ -->
+<!-- ╔════════════════════════════════════════════════════════════╗
+     ║  ABSCHNITT 1 – FIREBASE KONFIGURATION                     ║
+     ║  Deine Firebase-Zugangsdaten – nicht ändern!              ║
+     ╚════════════════════════════════════════════════════════════╝ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -37,771 +23,758 @@
     appId:             "1:49723431380:web:8ae15b6a04c789e21b1e41"
   };
 
-  // Firebase initialisieren
   const app = initializeApp(FIREBASE_CONFIG);
   const db  = getDatabase(app);
-
-  // Globale Referenz damit der Rest des Codes drauf zugreifen kann
-  window._db  = db;
-  window._ref = ref;
-  window._set = set;
-  window._update = update;
-  window._onValue = onValue;
+  window._db = db; window._ref = ref; window._set = set;
+  window._update = update; window._onValue = onValue;
   window._firebaseReady = true;
   window.dispatchEvent(new Event("firebase-ready"));
 </script>
 
 
-<!-- ═══════════════════════════════════════════════════════════
-     ABSCHNITT 2: FRAGEN & ANTWORTEN
-     Hier kannst du alle Fragen bearbeiten!
-
-     Aufbau einer Frage:
-       text:    Der angezeigte Fragetext
-       answers: Array mit Antworten:
-         text:    Hauptantwort (wird aufgedeckt angezeigt)
-         pts:     Punkte (Zahl)
-         aliases: Weitere gültige Schreibweisen für Tipp-Modus
-                  (Groß/Kleinschreibung egal, Umlaute werden
-                   automatisch normalisiert)
-
-     Frage hinzufügen: Einfach {} Block kopieren & einfügen!
-     ═══════════════════════════════════════════════════════════ -->
 <script>
-const FRAGEN = [
-  // ── FRAGE 1 ──────────────────────────────────────────────
+// ╔════════════════════════════════════════════════════════════╗
+// ║  ABSCHNITT 2 – KATEGORIEN & FRAGEN                        ║
+// ║                                                            ║
+// ║  So ist eine Kategorie aufgebaut:                         ║
+// ║                                                            ║
+// ║  {                                                         ║
+// ║    id:     "eindeutiger_name",   ← Kleinbuchstaben,       ║
+// ║                                    keine Leerzeichen      ║
+// ║    name:   "Angezeigter Name",   ← Auf dem Board          ║
+// ║    emoji:  "🎮",                 ← Emoji für die Kachel   ║
+// ║    farbe:  "#hexfarbe",          ← Farbe der Kachel       ║
+// ║    frage:  "Die Frage?",         ← Fragetext              ║
+// ║    antworten: [                                            ║
+// ║      { text: "Antwort",  pts: 40, aliases: ["alias"] },   ║
+// ║      { text: "Antwort2", pts: 30, aliases: [] },          ║
+// ║    ]                                                       ║
+// ║  }                                                         ║
+// ║                                                            ║
+// ║  KATEGORIE HINZUFÜGEN: Diesen Block kopieren & einfügen!  ║
+// ╚════════════════════════════════════════════════════════════╝
+
+const KATEGORIEN = [
+
+  // ── MINECRAFT ────────────────────────────────────────────────
   {
-    text: "Nenne einen Gegenstand, den fast jeder zuerst in Minecraft craftet.",
-    answers: [
-      { text: "Crafting Table",  pts: 38, aliases: ["werkbank", "crafting bench"] },
-      { text: "Holzschwert",     pts: 24, aliases: ["wooden sword", "schwert"] },
-      { text: "Bett",            pts: 17, aliases: ["bed"] },
-      { text: "Fackel",          pts: 12, aliases: ["torch", "torche"] },
-      { text: "Ofen",            pts:  9, aliases: ["furnace"] },
+    id:    "minecraft",
+    name:  "Minecraft 1",
+    emoji: "⛏️",
+    farbe: "#16a34a",
+    frage: "Nenne einen Mob, vor dem Spieler Angst haben.",
+    antworten: [
+      { text: "Creeper", pts: 38, aliases: [""] },
+      { text: "Warden",    pts: 24, aliases: [""] },
+      { text: "Enderman",           pts: 17, aliases: [""] },
+      { text: "Skelett",         pts: 12, aliases: [""] },
+      { text: "Zombie",           pts:  9, aliases: [""] },
     ]
   },
-  // ── FRAGE 2 ──────────────────────────────────────────────
-  {
-    text: "Welches Mob nervt Minecraft-Spieler am meisten?",
-    answers: [
-      { text: "Creeper",   pts: 42, aliases: [] },
-      { text: "Enderman",  pts: 22, aliases: ["endermen"] },
-      { text: "Zombie",    pts: 16, aliases: [] },
-      { text: "Skeleton",  pts: 13, aliases: ["skelett"] },
-      { text: "Phantom",   pts:  7, aliases: [] },
-    ]
-  },
-  // ── FRAGE 3 ──────────────────────────────────────────────
-  {
-    text: "Welches Biom mögen Spieler am meisten?",
-    answers: [
-      { text: "Wald",      pts: 35, aliases: ["forest", "birkenwald"] },
-      { text: "Ebene",     pts: 28, aliases: ["plains"] },
-      { text: "Strand",    pts: 19, aliases: ["beach"] },
-      { text: "Dschungel", pts: 12, aliases: ["jungle"] },
-      { text: "Gebirge",   pts:  6, aliases: ["mountains", "berge"] },
-    ]
-  },
-  // ── FRAGE 4 ──────────────────────────────────────────────
-  {
-    text: "Aus welchem Material baut man in Minecraft am liebsten Rüstungen?",
-    answers: [
-      { text: "Diamant",   pts: 40, aliases: ["diamond"] },
-      { text: "Eisen",     pts: 30, aliases: ["iron"] },
-      { text: "Netherit",  pts: 15, aliases: ["netherite"] },
-      { text: "Gold",      pts: 10, aliases: ["golden"] },
-      { text: "Leder",     pts:  5, aliases: ["leather"] },
+{
+    id:    "minecraft2",
+    name:  "Minecraft 2",
+    emoji: "⛏️",
+    farbe: "#16a34a",
+    frage: "Nenne einen Gegenstand, den fast jeder zuerst in Minecraft craftet.",
+    antworten: [
+      { text: "Crafting Table", pts: 38, aliases: ["werkbank", "crafting bench"] },
+      { text: "Holzschwert",    pts: 24, aliases: ["wooden sword", "schwert"] },
+      { text: "Bett",           pts: 17, aliases: ["bed"] },
+      { text: "Fackel",         pts: 12, aliases: ["torch"] },
+      { text: "Ofen",           pts:  9, aliases: ["furnace"] },
     ]
   },
 
-  // ════════════════════════════════════════════════════════
-  // ↓ HIER EIGENE FRAGEN EINFÜGEN – diesen Block kopieren:
+  // ── ALLGEMEINWISSEN ──────────────────────────────────────────
+  {
+    id:    "allgemein",
+    name:  "Allgemeinwissen",
+    emoji: "🧠",
+    farbe: "#2563eb",
+    frage: "Nenne ein Land, das die meisten Leute zuerst auf einer Weltkarte suchen.",
+    antworten: [
+      { text: "Deutschland", pts: 35, aliases: ["germany"] },
+      { text: "USA",         pts: 28, aliases: ["america", "vereinigte staaten"] },
+      { text: "Frankreich",  pts: 16, aliases: ["france"] },
+      { text: "China",       pts: 13, aliases: [] },
+      { text: "Australien",  pts:  8, aliases: ["australia"] },
+    ]
+  },
+
+  // ── POPKULTUR ────────────────────────────────────────────────
+  {
+    id:    "popkultur",
+    name:  "Popkultur",
+    emoji: "🎬",
+    farbe: "#7c3aed",
+    frage: "Nenne einen Marvel-Superhelden, den fast jeder kennt.",
+    antworten: [
+      { text: "Spider-Man",  pts: 40, aliases: ["spiderman", "peter parker"] },
+      { text: "Iron Man",    pts: 28, aliases: ["ironman", "tony stark"] },
+      { text: "Thor",        pts: 15, aliases: [] },
+      { text: "Hulk",        pts: 10, aliases: ["bruce banner"] },
+      { text: "Captain America", pts: 7, aliases: ["cap"] },
+    ]
+  },
+
+  // ── ESSEN & TRINKEN ──────────────────────────────────────────
+  {
+    id:    "essen",
+    name:  "Essen & Trinken",
+    emoji: "🍕",
+    farbe: "#ea580c",
+    frage: "Nenne ein Fast-Food-Gericht, das die meisten Leute am liebsten mögen.",
+    antworten: [
+      { text: "Pizza",       pts: 38, aliases: [] },
+      { text: "Burger",      pts: 30, aliases: ["hamburger"] },
+      { text: "Pommes",      pts: 16, aliases: ["fritten", "fries"] },
+      { text: "Döner",       pts: 10, aliases: ["kebab"] },
+      { text: "Nuggets",     pts:  6, aliases: ["chicken nuggets"] },
+    ]
+  },
+
+  // ── SPORT ────────────────────────────────────────────────────
+  {
+    id:    "sport",
+    name:  "Sport",
+    emoji: "⚽",
+    farbe: "#0891b2",
+    frage: "Nenne eine Sportart, die weltweit am meisten gespielt wird.",
+    antworten: [
+      { text: "Fußball",     pts: 45, aliases: ["soccer", "football"] },
+      { text: "Basketball",  pts: 22, aliases: [] },
+      { text: "Tennis",      pts: 14, aliases: [] },
+      { text: "Schwimmen",   pts:  9, aliases: ["swimming"] },
+      { text: "Volleyball",  pts:  5, aliases: [] },
+    ]
+  },
+
+  // ── MUSIK ────────────────────────────────────────────────────
+  {
+    id:    "musik",
+    name:  "Musik",
+    emoji: "🎵",
+    farbe: "#db2777",
+    frage: "Nenne einen Musik-Streaming-Dienst, den die meisten Leute nutzen.",
+    antworten: [
+      { text: "Spotify",        pts: 50, aliases: [] },
+      { text: "YouTube Music",  pts: 22, aliases: ["youtube"] },
+      { text: "Apple Music",    pts: 16, aliases: [] },
+      { text: "Amazon Music",   pts:  8, aliases: [] },
+      { text: "Deezer",         pts:  4, aliases: [] },
+    ]
+  },
+
+  // ── TIERE ────────────────────────────────────────────────────
+  {
+    id:    "tiere",
+    name:  "Tiere",
+    emoji: "🐾",
+    farbe: "#b45309",
+    frage: "Nenne ein Haustier, das die meisten Deutschen haben.",
+    antworten: [
+      { text: "Hund",    pts: 42, aliases: ["dog"] },
+      { text: "Katze",   pts: 36, aliases: ["cat"] },
+      { text: "Fisch",   pts: 10, aliases: ["goldfisch"] },
+      { text: "Vogel",   pts:  8, aliases: ["papagei", "wellensittich"] },
+      { text: "Hamster", pts:  4, aliases: [] },
+    ]
+  },
+
+  // ── TECHNOLOGIE ──────────────────────────────────────────────
+  {
+    id:    "tech",
+    name:  "Technologie",
+    emoji: "💻",
+    farbe: "#475569",
+    frage: "Nenne eine App, die fast jeder auf seinem Handy hat.",
+    antworten: [
+      { text: "WhatsApp",   pts: 44, aliases: [] },
+      { text: "Instagram",  pts: 26, aliases: ["insta"] },
+      { text: "TikTok",     pts: 14, aliases: [] },
+      { text: "YouTube",    pts: 10, aliases: [] },
+      { text: "Snapchat",   pts:  6, aliases: ["snap"] },
+    ]
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // ↓ EIGENE KATEGORIE HIER EINFÜGEN – Block kopieren:
   //
   // {
-  //   text: "Deine Frage?",
-  //   answers: [
+  //   id:    "meine_kategorie",      ← eindeutig, keine Leerzeichen
+  //   name:  "Meine Kategorie",
+  //   emoji: "🎯",
+  //   farbe: "#hexfarbe",
+  //   frage: "Meine Frage?",
+  //   antworten: [
   //     { text: "Antwort 1", pts: 40, aliases: ["alternative"] },
   //     { text: "Antwort 2", pts: 30, aliases: [] },
   //     { text: "Antwort 3", pts: 20, aliases: [] },
   //     { text: "Antwort 4", pts: 10, aliases: [] },
+  //     { text: "Antwort 5", pts:  5, aliases: [] },
   //   ]
   // },
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════
 ];
 
 
-// ═══════════════════════════════════════════════════════════
-// ABSCHNITT 3: DESIGN-EINSTELLUNGEN
-// Farben, Schriften, Seitenname – hier anpassen!
-// ═══════════════════════════════════════════════════════════
-
+// ╔════════════════════════════════════════════════════════════╗
+// ║  ABSCHNITT 3 – DESIGN                                     ║
+// ║  Farben und Namen hier anpassen                           ║
+// ╚════════════════════════════════════════════════════════════╝
 const DESIGN = {
-  // Seitenname oben im Header
-  seitenName:   "Family Feud",
-  // Untertitel
-  untertitel:   "Minecraft Edition",
-
-  // Farben – CSS-Farbwerte (Hex, rgb(), hsl() etc.)
+  seitenName: "X-Show",
+  untertitel: "",
   farben: {
-    hintergrund:    "#0a0a1a",   // Seiten-Hintergrund (sehr dunkles Blau-Schwarz)
-    primary:        "#FFD700",   // Goldgelb – Hauptakzentfarbe
-    primaryDunkel:  "#b8960a",   // Dunkleres Gold für Hover/Schatten
-    sekundaer:      "#1a1a3e",   // Kachelfarbe (dunkles Blau)
-    sekundaerHell:  "#2a2a5e",   // Kachel Hover
-    aufgedeckt:     "#0d3d1a",   // Aufgedeckte Antwort (dunkles Grün)
-    aufgedecktRand: "#22c55e",   // Rand aufgedeckte Antwort
-    strike:         "#dc2626",   // Strike-Rot
-    headerVon:      "#FFD700",   // Header-Gradient Start
-    headerBis:      "#f97316",   // Header-Gradient Ende
-    headerText:     "#0a0a1a",   // Text im Header
-    teamEins:       "#3b82f6",   // Farbe Team 1 (Blau)
-    teamZwei:       "#ef4444",   // Farbe Team 2 (Rot)
+    hintergrund:    "#0a0a1a",
+    primary:        "#FFD700",
+    sekundaer:      "#1a1a3e",
+    sekundaerHell:  "#2a2a5e",
+    aufgedeckt:     "#0d3d1a",
+    aufgedecktRand: "#22c55e",
+    strike:         "#dc2626",
+    headerVon:      "#FFD700",
+    headerBis:      "#f97316",
+    headerText:     "#0a0a1a",
+    teamEins:       "#3b82f6",  // Farbe Team 1
+    teamZwei:       "#ef4444",  // Farbe Team 2
   }
 };
 </script>
 
 
-<!-- ═══════════════════════════════════════════════════════════
-     ABSCHNITT 4: STYLES
-     Hier sind die CSS-Stile. Fortgeschrittene Anpassungen
-     kannst du hier vornehmen.
-     ═══════════════════════════════════════════════════════════ -->
 <style>
-  /* Google Font laden */
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500&display=swap');
 
-  /* CSS-Variablen – werden per JS aus DESIGN befüllt */
-  :root {
-    --bg:           #0a0a1a;
-    --primary:      #FFD700;
-    --primary-dark: #b8960a;
-    --card:         #1a1a3e;
-    --card-hover:   #2a2a5e;
-    --revealed:     #0d3d1a;
-    --rev-border:   #22c55e;
-    --strike:       #dc2626;
-    --hdr-from:     #FFD700;
-    --hdr-to:       #f97316;
-    --hdr-text:     #0a0a1a;
-    --t1:           #3b82f6;
-    --t2:           #ef4444;
-  }
+:root {
+  --bg:        #0a0a1a;
+  --primary:   #FFD700;
+  --card:      #1a1a3e;
+  --card-h:    #2a2a5e;
+  --rev:       #0d3d1a;
+  --rev-b:     #22c55e;
+  --strike:    #dc2626;
+  --hf:        #FFD700;
+  --ht:        #f97316;
+  --htxt:      #0a0a1a;
+  --t1:        #3b82f6;
+  --t2:        #ef4444;
+}
 
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-  body {
-    background: var(--bg);
-    font-family: 'Barlow', sans-serif;
-    color: #fff;
-    min-height: 100vh;
-    overflow-x: hidden;
-    /* Dezentes Raster-Muster im Hintergrund */
-    background-image:
-      linear-gradient(rgba(255,215,0,.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,215,0,.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
+body {
+  background: var(--bg);
+  font-family: 'Barlow', sans-serif;
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    linear-gradient(rgba(255,215,0,.03) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(255,215,0,.03) 1px,transparent 1px);
+  background-size: 40px 40px;
+}
 
-  /* ── Screens ─────────────────────────────────────── */
-  .screen { display: none; min-height: 100vh; flex-direction: column; }
-  .screen.active { display: flex; }
+.screen { display:none; min-height:100vh; flex-direction:column; }
+.screen.active { display:flex; }
 
-  /* ── Header ──────────────────────────────────────── */
-  .hdr {
-    background: linear-gradient(135deg, var(--hdr-from), var(--hdr-to));
-    text-align: center;
-    padding: 10px 20px 8px;
-    position: relative;
-    overflow: hidden;
-  }
-  /* Schimmer-Overlay im Header */
-  .hdr::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.15) 50%, transparent 100%);
-    animation: shimmer 3s infinite;
-  }
-  @keyframes shimmer {
-    0%   { transform: translateX(-100%); }
-    100% { transform: translateX(200%); }
-  }
-  .hdr-inner { position: relative; z-index: 1; }
-  .hdr-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 3rem;
-    letter-spacing: 6px;
-    color: var(--hdr-text);
-    text-shadow: 2px 3px 0 rgba(0,0,0,.3);
-    line-height: 1;
-  }
-  .hdr-sub {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .75rem;
-    font-weight: 600;
-    letter-spacing: 4px;
-    color: var(--hdr-text);
-    opacity: .7;
-    text-transform: uppercase;
-  }
+/* ── Header ── */
+.hdr {
+  background: linear-gradient(135deg, var(--hf), var(--ht));
+  text-align:center; padding:8px 20px 6px;
+  position:relative; overflow:hidden; flex-shrink:0;
+}
+.hdr::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  animation:shimmer 3s infinite;
+}
+@keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+.hdr-inner { position:relative; z-index:1; }
+.hdr-title {
+  font-family:'Bebas Neue',sans-serif; font-size:2.6rem;
+  letter-spacing:6px; color:var(--htxt);
+  text-shadow:2px 3px 0 rgba(0,0,0,.25); line-height:1;
+}
+.hdr-sub {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.7rem; font-weight:600; letter-spacing:4px;
+  color:var(--htxt); opacity:.65; text-transform:uppercase;
+}
 
-  /* ── Score-Leiste ────────────────────────────────── */
-  .score-bar {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 20px;
-    background: rgba(0,0,0,.4);
-    border-bottom: 1px solid rgba(255,215,0,.15);
-    backdrop-filter: blur(4px);
-  }
-  .team-block { display: flex; flex-direction: column; gap: 2px; }
-  .team-block.right { align-items: flex-end; }
-  .team-name {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .7rem;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    opacity: .7;
-  }
-  .team-score-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.8rem;
-    letter-spacing: 2px;
-    line-height: 1;
-  }
-  .team-block:first-child .team-score-num { color: var(--t1); }
-  .team-block:last-child  .team-score-num  { color: var(--t2); }
-  /* Aktives Team – aufleuchten */
-  .team-block.active .team-name { opacity: 1; }
-  .team-block.active .team-score-num { filter: drop-shadow(0 0 8px currentColor); }
+/* ── Score bar ── */
+.sbar {
+  display:grid; grid-template-columns:1fr auto 1fr;
+  align-items:center; gap:12px; padding:8px 20px;
+  background:rgba(0,0,0,.45); border-bottom:1px solid rgba(255,215,0,.12);
+  flex-shrink:0;
+}
+.tblk { display:flex; flex-direction:column; gap:1px; }
+.tblk.r { align-items:flex-end; }
+.tblk-name {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.65rem; font-weight:700; letter-spacing:3px;
+  text-transform:uppercase; opacity:.6;
+}
+.tblk-pts {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:2.6rem; letter-spacing:2px; line-height:1;
+}
+.tblk:first-child .tblk-pts { color:var(--t1); }
+.tblk:last-child  .tblk-pts  { color:var(--t2); }
+.tblk.active .tblk-name { opacity:1; }
+.tblk.active .tblk-pts  { filter:drop-shadow(0 0 8px currentColor); }
+.rctr { text-align:center; }
+.rctr-lbl { font-family:'Barlow Condensed',sans-serif; font-size:.6rem; letter-spacing:3px; text-transform:uppercase; color:var(--primary); opacity:.6; }
+.rctr-num { font-family:'Bebas Neue',sans-serif; font-size:1.4rem; color:var(--primary); letter-spacing:2px; }
+.rctr-pot { font-family:'Barlow Condensed',sans-serif; font-size:.7rem; letter-spacing:2px; color:var(--primary); font-weight:600; }
 
-  .round-center { text-align: center; }
-  .round-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .65rem;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--primary);
-    opacity: .7;
-  }
-  .round-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
-    color: var(--primary);
-    letter-spacing: 2px;
-  }
-  .pot-display {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .75rem;
-    letter-spacing: 2px;
-    color: var(--primary);
-    font-weight: 600;
-  }
+/* ── Verbindungs-Pill ── */
+.conn-pill {
+  display:flex; justify-content:center; padding:3px 0; flex-shrink:0;
+}
+.pill {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.08);
+  border-radius:99px; padding:3px 10px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.6rem; letter-spacing:2px; text-transform:uppercase;
+  color:rgba(255,255,255,.4);
+}
+.pdot { width:5px; height:5px; border-radius:50%; background:#22c55e; animation:pulse 2s infinite; }
+.pdot.off { background:#ef4444; animation:none; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-  /* ── Frage ───────────────────────────────────────── */
-  .question-wrap { padding: 12px 20px 6px; }
-  .question-box {
-    background: rgba(255,215,0,.06);
-    border: 1.5px solid rgba(255,215,0,.25);
-    border-radius: 6px;
-    padding: 12px 20px;
-    text-align: center;
-  }
-  .question-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .65rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--primary);
-    opacity: .6;
-    margin-bottom: 4px;
-  }
-  .question-text {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1.25;
-    color: #fff;
-  }
+/* ── Kategorie-Screen ── */
+#s-cats {
+  justify-content:flex-start;
+}
+.cats-wrap {
+  flex:1; padding:12px 20px 16px; overflow-y:auto;
+  display:flex; flex-direction:column; gap:10px;
+}
+.cats-header {
+  text-align:center; padding:10px 0 4px;
+}
+.cats-header-title {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.4rem; letter-spacing:4px; color:var(--primary);
+}
+.cats-header-sub {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.65rem; letter-spacing:3px; text-transform:uppercase;
+  color:rgba(255,255,255,.3); margin-top:2px;
+}
 
-  /* ── Antwort-Grid ────────────────────────────────── */
-  .answers-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    padding: 8px 20px;
-    flex: 1;
-  }
-  .answer-tile {
-    background: var(--card);
-    border: 1.5px solid rgba(255,255,255,.07);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 14px;
-    height: 60px;
-    cursor: pointer;
-    transition: background .15s, border-color .15s, transform .1s;
-    position: relative;
-    overflow: hidden;
-  }
-  .answer-tile::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.03), transparent);
-    transform: translateX(-100%);
-    transition: transform .4s;
-  }
-  .answer-tile:hover:not(.revealed):not(.locked) {
-    background: var(--card-hover);
-    border-color: rgba(255,215,0,.3);
-    transform: scale(1.01);
-  }
-  .answer-tile:hover:not(.revealed):not(.locked)::before { transform: translateX(100%); }
+/* Kategorie-Gitter */
+.cats-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap:10px;
+}
+.cat-tile {
+  background: var(--card);
+  border:1.5px solid rgba(255,255,255,.07);
+  border-radius:8px;
+  padding:16px 14px;
+  cursor:pointer;
+  transition:transform .15s, border-color .15s, box-shadow .15s;
+  position:relative; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+}
+.cat-tile::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg, rgba(255,255,255,.04), transparent);
+  border-radius:8px;
+}
+.cat-tile:hover:not(.used) {
+  transform:translateY(-3px) scale(1.02);
+  border-color:rgba(255,255,255,.25);
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.cat-tile.used {
+  opacity:.35; cursor:not-allowed;
+  filter:grayscale(.8);
+}
+.cat-tile.active-cat {
+  border-width:2px;
+  box-shadow:0 0 16px rgba(255,255,255,.15);
+}
+.cat-emoji { font-size:2rem; line-height:1; }
+.cat-name {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1rem; font-weight:700;
+  letter-spacing:1px; text-transform:uppercase;
+  text-align:center; line-height:1.2;
+}
+.cat-badge {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.6rem; letter-spacing:2px; text-transform:uppercase;
+  color:rgba(255,255,255,.35); margin-top:2px;
+}
+.cat-badge.done { color:#22c55e; }
 
-  .answer-tile.revealed {
-    background: var(--revealed);
-    border-color: var(--rev-border);
-    cursor: default;
-    animation: revealPop .35s cubic-bezier(.34,1.56,.64,1);
-  }
-  @keyframes revealPop {
-    0%   { transform: scale(.94); opacity: .5; }
-    100% { transform: scale(1);   opacity: 1; }
-  }
-  .answer-tile.locked { cursor: default; opacity: .6; }
+/* Farbige Akzentlinie oben */
+.cat-tile .cat-bar {
+  position:absolute; top:0; left:0; right:0;
+  height:3px; border-radius:8px 8px 0 0;
+}
 
-  .tile-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.3rem;
-    color: var(--primary);
-    min-width: 22px;
-    opacity: .7;
-  }
-  .tile-dots {
-    display: flex; gap: 5px; align-items: center; flex: 1;
-  }
-  .dot { width: 7px; height: 7px; background: rgba(255,255,255,.2); border-radius: 50%; }
-  .tile-answer {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    flex: 1;
-  }
-  .tile-pts {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
-    color: var(--primary);
-    letter-spacing: 1px;
-  }
+/* Ausgewählte Kategorie – Info-Box */
+.selected-cat-box {
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,215,0,.2);
+  border-radius:8px; padding:14px 18px;
+  display:flex; align-items:center; gap:14px;
+}
+.selected-cat-emoji { font-size:2.5rem; }
+.selected-cat-info { flex:1; }
+.selected-cat-name {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.3rem; letter-spacing:3px;
+}
+.selected-cat-frage {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.9rem; color:rgba(255,255,255,.6);
+  margin-top:3px; line-height:1.3;
+}
+.selected-cat-box .b-start-cat {
+  background:linear-gradient(135deg,var(--primary),#f97316);
+  color:#0a0a1a; font-family:'Bebas Neue',sans-serif;
+  font-size:1.1rem; letter-spacing:2px; padding:10px 22px;
+  border:none; border-radius:5px; cursor:pointer;
+  transition:filter .15s, transform .1s; white-space:nowrap;
+}
+.selected-cat-box .b-start-cat:hover { filter:brightness(1.1); transform:translateY(-2px); }
 
-  /* ── Strikes ─────────────────────────────────────── */
-  .strikes-row {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    padding: 6px 0;
-  }
-  .strike-x {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 3rem;
-    color: rgba(255,255,255,.12);
-    line-height: 1;
-    transition: color .2s, filter .2s;
-  }
-  .strike-x.active {
-    color: var(--strike);
-    filter: drop-shadow(0 0 12px var(--strike));
-    animation: strikePop .4s cubic-bezier(.34,1.56,.64,1);
-  }
-  @keyframes strikePop {
-    0%   { transform: scale(2) rotate(-10deg); opacity: 0; }
-    60%  { transform: scale(.9) rotate(3deg); }
-    100% { transform: scale(1) rotate(0); opacity: 1; }
-  }
+/* Wartetext wenn keine Kategorie ausgewählt */
+.cat-wait {
+  text-align:center; padding:14px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.9rem; color:rgba(255,255,255,.3);
+  letter-spacing:2px; text-transform:uppercase;
+  background:rgba(255,255,255,.02);
+  border:1px dashed rgba(255,255,255,.1);
+  border-radius:8px;
+}
 
-  /* ── Tipp-Eingabe ────────────────────────────────── */
-  .input-row {
-    display: flex;
-    gap: 8px;
-    padding: 6px 20px;
-    align-items: center;
-  }
-  .ans-input {
-    flex: 1;
-    background: rgba(255,255,255,.05);
-    border: 1.5px solid rgba(255,215,0,.25);
-    border-radius: 5px;
-    color: #fff;
-    padding: 10px 14px;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 1.2rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    outline: none;
-    transition: border-color .2s;
-  }
-  .ans-input:focus { border-color: var(--primary); }
-  .ans-input::placeholder { text-transform: none; font-size: 1rem; opacity: .4; letter-spacing: 0; font-weight: 400; }
-  .input-result {
-    padding: 3px 20px;
-    min-height: 24px;
-    text-align: center;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    transition: color .2s;
-  }
+/* ── Frage-Screen ── */
+.qwrap { padding:10px 20px 5px; flex-shrink:0; }
+.qbox {
+  background:rgba(255,215,0,.05);
+  border:1.5px solid rgba(255,215,0,.2);
+  border-radius:6px; padding:10px 18px; text-align:center;
+}
+.qbox-lbl {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.6rem; letter-spacing:4px; text-transform:uppercase;
+  color:var(--primary); opacity:.6; margin-bottom:3px;
+}
+.qbox-cat {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.8rem; font-weight:700; letter-spacing:2px;
+  text-transform:uppercase; margin-bottom:3px;
+}
+.qbox-txt {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1.4rem; font-weight:700; line-height:1.25;
+}
 
-  /* ── Steuerungs-Leiste ───────────────────────────── */
-  .ctrl-bar {
-    padding: 8px 20px 14px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    border-top: 1px solid rgba(255,255,255,.06);
-  }
+/* ── Antwort-Grid ── */
+.agrid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:7px; padding:7px 20px; flex:1;
+}
+.atile {
+  background:var(--card); border:1.5px solid rgba(255,255,255,.07);
+  border-radius:6px; display:flex; align-items:center;
+  gap:10px; padding:0 13px; height:56px;
+  cursor:pointer; transition:background .15s, border-color .15s, transform .1s;
+}
+.atile:hover:not(.rev):not(.locked) {
+  background:var(--card-h); border-color:rgba(255,215,0,.3);
+  transform:scale(1.01);
+}
+.atile.rev {
+  background:var(--rev); border-color:var(--rev-b);
+  cursor:default; animation:revPop .35s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes revPop { 0%{transform:scale(.92);opacity:.4} 100%{transform:scale(1);opacity:1} }
+.atile.locked { cursor:default; opacity:.5; }
+.anum { font-family:'Bebas Neue',sans-serif; font-size:1.2rem; color:var(--primary); min-width:20px; opacity:.6; }
+.adots { display:flex; gap:4px; align-items:center; flex:1; }
+.dot  { width:6px; height:6px; background:rgba(255,255,255,.18); border-radius:50%; }
+.atxt { font-family:'Barlow Condensed',sans-serif; font-size:1.2rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; flex:1; }
+.apts { font-family:'Bebas Neue',sans-serif; font-size:1.4rem; color:var(--primary); letter-spacing:1px; }
 
-  /* ── Buttons ─────────────────────────────────────── */
-  button {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700;
-    font-size: .9rem;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 9px 16px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: transform .1s, filter .15s;
-    white-space: nowrap;
-  }
-  button:hover  { filter: brightness(1.15); transform: translateY(-2px); }
-  button:active { transform: translateY(0);  filter: brightness(.95); }
+/* ── Strikes ── */
+.strikes { display:flex; justify-content:center; gap:14px; padding:5px 0; flex-shrink:0; }
+.sx { font-family:'Bebas Neue',sans-serif; font-size:3rem; color:rgba(255,255,255,.1); line-height:1; transition:color .2s, filter .2s; }
+.sx.on { color:var(--strike); filter:drop-shadow(0 0 10px var(--strike)); animation:sxPop .4s cubic-bezier(.34,1.56,.64,1); }
+@keyframes sxPop { 0%{transform:scale(2) rotate(-10deg);opacity:0} 60%{transform:scale(.9) rotate(3deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
 
-  /* Button-Varianten */
-  .b-strike { background: var(--strike);    color: #fff; }
-  .b-award1 { background: var(--t1);        color: #fff; }
-  .b-award2 { background: var(--t2);        color: #fff; }
-  .b-next   { background: #16a34a;          color: #fff; }
-  .b-prev   { background: rgba(255,255,255,.1); color: #fff; }
-  .b-reset  { background: #7f1d1d;          color: #fff; }
-  .b-mode   { background: rgba(255,215,0,.15); color: var(--primary); border: 1px solid rgba(255,215,0,.3); }
-  .b-setup  { background: rgba(255,255,255,.08); color: #fff; }
-  .b-big    {
-    background: linear-gradient(135deg, var(--primary), #f97316);
-    color: #0a0a1a;
-    font-size: 1.1rem;
-    padding: 13px 36px;
-    font-weight: 900;
-    letter-spacing: 3px;
-  }
-  .b-danger { background: #7f1d1d; color: #fff; }
+/* ── Tipp-Eingabe ── */
+.irow { display:flex; gap:8px; padding:5px 20px; align-items:center; flex-shrink:0; }
+.ainp {
+  flex:1; background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,215,0,.2); border-radius:5px;
+  color:#fff; padding:9px 13px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1.15rem; font-weight:600; letter-spacing:1px;
+  text-transform:uppercase; outline:none; transition:border-color .2s;
+}
+.ainp:focus { border-color:var(--primary); }
+.ainp::placeholder { text-transform:none; font-size:.95rem; opacity:.35; font-weight:400; letter-spacing:0; }
+.iresult {
+  padding:2px 20px; min-height:22px; text-align:center;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.9rem; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  flex-shrink:0;
+}
 
-  /* ── Modus-Badge ─────────────────────────────────── */
-  .mode-badge {
-    text-align: center;
-    padding: 2px 0;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .65rem;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,.3);
-  }
-  .mode-badge span { color: var(--primary); }
+/* ── Controls ── */
+.ctrl {
+  padding:7px 20px 12px; display:flex;
+  flex-wrap:wrap; gap:7px; justify-content:center;
+  border-top:1px solid rgba(255,255,255,.05); flex-shrink:0;
+}
+button {
+  font-family:'Barlow Condensed',sans-serif; font-weight:700;
+  font-size:.88rem; letter-spacing:1.5px; text-transform:uppercase;
+  padding:8px 14px; border:none; border-radius:5px;
+  cursor:pointer; transition:transform .1s, filter .15s; white-space:nowrap;
+}
+button:hover  { filter:brightness(1.15); transform:translateY(-2px); }
+button:active { transform:translateY(0); filter:brightness(.95); }
+.b-strike { background:var(--strike); color:#fff; }
+.b-a1  { background:var(--t1); color:#fff; }
+.b-a2  { background:var(--t2); color:#fff; }
+.b-next  { background:#16a34a; color:#fff; }
+.b-prev  { background:rgba(255,255,255,.1); color:#fff; }
+.b-reset { background:#7f1d1d; color:#fff; }
+.b-mode  { background:rgba(255,215,0,.12); color:var(--primary); border:1px solid rgba(255,215,0,.25); }
+.b-cats  { background:rgba(255,255,255,.08); color:#fff; }
+.b-setup { background:rgba(255,255,255,.06); color:rgba(255,255,255,.6); }
+.b-big   { background:linear-gradient(135deg,var(--primary),#f97316); color:#0a0a1a; font-size:1.05rem; padding:12px 32px; font-weight:900; letter-spacing:3px; }
+.b-danger { background:#7f1d1d; color:#fff; }
 
-  /* ── Status-Pill ─────────────────────────────────── */
-  .status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0,0,0,.4);
-    border: 1px solid rgba(255,255,255,.1);
-    border-radius: 99px;
-    padding: 4px 12px;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .7rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,.5);
-    margin: 4px auto 0;
-  }
-  .status-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #22c55e;
-    animation: pulse 2s infinite;
-  }
-  .status-dot.offline { background: #ef4444; animation: none; }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: .3; }
-  }
+.mbadge { text-align:center; padding:2px 0; font-family:'Barlow Condensed',sans-serif; font-size:.6rem; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,.25); flex-shrink:0; }
+.mbadge span { color:var(--primary); }
 
-  /* ── Flash-Overlay ───────────────────────────────── */
-  .flash-overlay {
-    position: fixed; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    pointer-events: none; z-index: 999;
-  }
-  .flash-text {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 5rem;
-    letter-spacing: 6px;
-    opacity: 0;
-    transform: scale(.4);
-    transition: opacity .15s, transform .2s cubic-bezier(.34,1.56,.64,1);
-  }
-  .flash-text.show { opacity: 1; transform: scale(1); }
-  .flash-text.red   { color: var(--strike); text-shadow: 0 0 30px var(--strike); }
-  .flash-text.green { color: #22c55e;        text-shadow: 0 0 30px #22c55e; }
+/* ── Flash ── */
+.flash-ov { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:999; }
+.flash-el {
+  font-family:'Bebas Neue',sans-serif; font-size:4.5rem; letter-spacing:6px;
+  opacity:0; transform:scale(.4);
+  transition:opacity .15s, transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.flash-el.show { opacity:1; transform:scale(1); }
+.flash-el.red   { color:var(--strike); text-shadow:0 0 28px var(--strike); }
+.flash-el.green { color:#22c55e;       text-shadow:0 0 28px #22c55e; }
 
-  /* ── Setup-Screen ────────────────────────────────── */
-  #s-setup {
-    background: var(--bg);
-    justify-content: center;
-    align-items: center;
-    padding: 24px 16px;
-  }
-  .setup-card {
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(255,215,0,.2);
-    border-radius: 12px;
-    padding: 28px;
-    max-width: 660px;
-    width: 100%;
-    backdrop-filter: blur(8px);
-  }
-  .setup-logo {
-    text-align: center;
-    margin-bottom: 24px;
-  }
-  .setup-logo-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.8rem;
-    letter-spacing: 6px;
-    background: linear-gradient(135deg, var(--primary), #f97316);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .setup-logo-sub {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .7rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,.3);
-    margin-top: 2px;
-  }
-  .section-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .7rem;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--primary);
-    opacity: .7;
-    margin-bottom: 10px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid rgba(255,215,0,.15);
-  }
-  label {
-    display: block;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .7rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,.4);
-    margin-bottom: 5px;
-  }
-  input[type=text], select {
-    width: 100%;
-    background: rgba(255,255,255,.05);
-    border: 1.5px solid rgba(255,255,255,.1);
-    border-radius: 5px;
-    color: #fff;
-    padding: 9px 12px;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 12px;
-    transition: border-color .2s;
-  }
-  input[type=text]:focus, select:focus { outline: none; border-color: var(--primary); }
-  select option { background: #1a1a3e; }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* ── Setup-Screen ── */
+#s-setup { background:var(--bg); justify-content:center; align-items:center; padding:20px; }
+.setup-card {
+  background:rgba(255,255,255,.03); border:1px solid rgba(255,215,0,.18);
+  border-radius:12px; padding:26px; max-width:600px; width:100%;
+}
+.setup-logo { text-align:center; margin-bottom:20px; }
+.setup-logo-t {
+  font-family:'Bebas Neue',sans-serif; font-size:2.6rem; letter-spacing:6px;
+  background:linear-gradient(135deg,var(--primary),#f97316);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.setup-logo-s { font-family:'Barlow Condensed',sans-serif; font-size:.65rem; letter-spacing:4px; text-transform:uppercase; color:rgba(255,255,255,.28); margin-top:2px; }
+.sec-ttl {
+  font-family:'Barlow Condensed',sans-serif; font-size:.65rem; font-weight:700;
+  letter-spacing:3px; text-transform:uppercase; color:var(--primary); opacity:.6;
+  margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid rgba(255,215,0,.12);
+}
+label { display:block; font-family:'Barlow Condensed',sans-serif; font-size:.65rem; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.35); margin-bottom:4px; }
+input[type=text], select {
+  width:100%; background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.1); border-radius:5px;
+  color:#fff; padding:8px 11px;
+  font-family:'Barlow Condensed',sans-serif; font-size:.95rem; font-weight:600;
+  margin-bottom:10px; transition:border-color .2s;
+}
+input[type=text]:focus, select:focus { outline:none; border-color:var(--primary); }
+select option { background:#1a1a3e; }
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.fb-bar {
+  display:flex; align-items:center; gap:7px;
+  padding:7px 11px; border-radius:5px; margin-bottom:12px;
+  font-family:'Barlow Condensed',sans-serif; font-size:.8rem; font-weight:600; letter-spacing:1px;
+}
+.fb-bar.ok   { background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.25); color:#22c55e; }
+.fb-bar.warn { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.25); color:#ef4444; }
+.fb-dot2 { width:7px; height:7px; border-radius:50%; }
+.fb-bar.ok   .fb-dot2 { background:#22c55e; }
+.fb-bar.warn .fb-dot2 { background:#ef4444; }
 
-  .firebase-note {
-    background: rgba(255,215,0,.06);
-    border: 1px solid rgba(255,215,0,.2);
-    border-radius: 6px;
-    padding: 12px 14px;
-    font-size: .85rem;
-    line-height: 1.6;
-    color: rgba(255,255,255,.55);
-    margin-top: 14px;
-  }
-  .firebase-note strong { color: var(--primary); }
-  .firebase-note code {
-    background: rgba(0,0,0,.3);
-    color: var(--primary);
-    padding: 1px 5px;
-    border-radius: 3px;
-    font-size: .8rem;
-  }
+/* ── Gewinner-Screen ── */
+#s-win {
+  background: #000;
+  justify-content:center; align-items:center; text-align:center;
+  padding:0; overflow:hidden; position:relative;
+}
+/* Animierter Konfetti-Hintergrund */
+#s-win::before {
+  content:'';
+  position:absolute; inset:0;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(255,215,0,.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, rgba(255,100,0,.12) 0%, transparent 50%),
+    radial-gradient(circle at 50% 10%, rgba(255,255,255,.05) 0%, transparent 40%);
+  animation:winBg 4s ease-in-out infinite alternate;
+}
+@keyframes winBg {
+  0%   { opacity:.6; transform:scale(1); }
+  100% { opacity:1;  transform:scale(1.05); }
+}
+.win-inner {
+  position:relative; z-index:2;
+  display:flex; flex-direction:column; align-items:center;
+  width:100%; padding:30px 20px;
+}
+/* Konfetti-Partikel */
+.confetti-wrap {
+  position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:1;
+}
+.cp {
+  position:absolute; width:10px; height:10px; border-radius:2px;
+  animation:fall linear infinite;
+}
+@keyframes fall {
+  0%   { transform:translateY(-20px) rotate(0deg);   opacity:1; }
+  100% { transform:translateY(110vh) rotate(720deg); opacity:0; }
+}
 
-  /* Firebase Verbindungs-Anzeige */
-  .fb-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 5px;
-    margin-bottom: 14px;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .85rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-  }
-  .fb-status.ok   { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); color: #22c55e; }
-  .fb-status.warn { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #ef4444; }
-  .fb-dot { width: 8px; height: 8px; border-radius: 50%; }
-  .fb-status.ok   .fb-dot { background: #22c55e; }
-  .fb-status.warn .fb-dot { background: #ef4444; }
+/* Obere Deko-Linie */
+.win-deco {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.65rem; letter-spacing:6px; text-transform:uppercase;
+  color:rgba(255,255,255,.25); margin-bottom:10px;
+}
+/* Trophäe */
+.win-trophy-big {
+  font-size:5rem; line-height:1;
+  filter:drop-shadow(0 0 30px rgba(255,215,0,.6));
+  animation:trophyPop 0.6s cubic-bezier(.34,1.56,.64,1) both, trophyFloat 3s ease-in-out 0.6s infinite;
+  margin-bottom:8px;
+}
+@keyframes trophyPop {
+  0%   { transform:scale(0) rotate(-20deg); opacity:0; }
+  100% { transform:scale(1) rotate(0deg);   opacity:1; }
+}
+@keyframes trophyFloat {
+  0%,100% { transform:translateY(0); }
+  50%     { transform:translateY(-8px); }
+}
 
-  /* ── Gewinner-Screen ─────────────────────────────── */
-  #s-win {
-    background: radial-gradient(ellipse at center, rgba(255,215,0,.08) 0%, var(--bg) 70%);
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 24px;
-  }
-  .win-card {
-    background: rgba(255,255,255,.04);
-    border: 2px solid var(--primary);
-    border-radius: 16px;
-    padding: 48px 56px;
-    position: relative;
-    overflow: hidden;
-  }
-  .win-card::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, var(--primary), #f97316, var(--primary));
-    z-index: -1;
-    animation: rotateBorder 3s linear infinite;
-  }
-  @keyframes rotateBorder {
-    0%   { filter: hue-rotate(0deg); }
-    100% { filter: hue-rotate(360deg); }
-  }
-  .win-trophy { font-size: 3rem; margin-bottom: 8px; }
-  .win-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: .7rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,.4);
-    margin-bottom: 6px;
-  }
-  .win-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 4rem;
-    letter-spacing: 6px;
-    background: linear-gradient(135deg, var(--primary), #f97316);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1;
-  }
-  .win-score {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: rgba(255,255,255,.6);
-    margin-top: 8px;
-    letter-spacing: 2px;
-  }
-  .win-btns { display: flex; gap: 12px; justify-content: center; margin-top: 28px; }
+/* "GEWINNER" Label */
+.win-lbl {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.7rem; font-weight:700; letter-spacing:6px;
+  text-transform:uppercase; color:rgba(255,255,255,.35);
+  margin-bottom:6px;
+}
+
+/* Teamname – riesig */
+.win-name {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:min(12vw, 5.5rem);
+  letter-spacing:8px;
+  line-height:1;
+  background:linear-gradient(135deg, #FFD700 0%, #FF8C00 40%, #FFD700 70%, #FFF8DC 100%);
+  background-size:200% 200%;
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  animation:goldShimmer 2s linear infinite, nameSlide .7s cubic-bezier(.34,1.56,.64,1) .3s both;
+  text-shadow:none;
+  margin-bottom:4px;
+}
+@keyframes goldShimmer {
+  0%   { background-position:0%   50%; }
+  100% { background-position:200% 50%; }
+}
+@keyframes nameSlide {
+  0%   { transform:translateY(40px) scale(.8); opacity:0; }
+  100% { transform:translateY(0)    scale(1);  opacity:1; }
+}
+
+/* "HAT GEWONNEN!" */
+.win-tagline {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1.6rem; font-weight:900; letter-spacing:4px;
+  text-transform:uppercase; color:#fff;
+  animation:nameSlide .7s cubic-bezier(.34,1.56,.64,1) .5s both;
+  margin-bottom:20px;
+}
+
+/* Score-Vergleich */
+.win-vs {
+  display:flex; align-items:center; gap:20px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px; padding:16px 28px;
+  margin-bottom:24px;
+  animation:nameSlide .7s ease .7s both;
+}
+.win-team-blk { text-align:center; }
+.win-team-blk.winner .win-tname { opacity:1; }
+.win-team-blk.winner .win-tpts {
+  filter:drop-shadow(0 0 12px currentColor);
+}
+.win-tname {
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:.7rem; font-weight:700; letter-spacing:3px;
+  text-transform:uppercase; opacity:.45;
+}
+.win-tpts {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:2.8rem; letter-spacing:2px; line-height:1;
+}
+.win-vs-sep {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.4rem; color:rgba(255,255,255,.2); letter-spacing:2px;
+}
+
+.win-btns { display:flex; gap:10px; justify-content:center; animation:nameSlide .7s ease .9s both; }
 </style>
 </head>
 <body>
 
-<!-- Flash-Overlay (Richtig / Falsch Anzeige) -->
-<div class="flash-overlay">
-  <div class="flash-text" id="flashEl"></div>
-</div>
+<div class="flash-ov"><div class="flash-el" id="flashEl"></div></div>
 
 <!-- ═══════════════════════════════════════════════════════════
-     SETUP-SCREEN – Nur der Moderator sieht diesen Screen
+     SETUP-SCREEN
      ═══════════════════════════════════════════════════════════ -->
 <div class="screen active" id="s-setup">
   <div class="setup-card">
-
     <div class="setup-logo">
-      <div class="setup-logo-title" id="setupTitle">Family Feud</div>
-      <div class="setup-logo-sub" id="setupSub">Minecraft Edition</div>
+      <div class="setup-logo-t" id="setupT">Family Feud</div>
+      <div class="setup-logo-s" id="setupS">Minecraft Edition</div>
     </div>
 
-    <!-- Firebase-Status -->
-    <div class="fb-status warn" id="fbStatus">
-      <div class="fb-dot"></div>
-      <span id="fbStatusText">Firebase nicht verbunden – bitte Config prüfen</span>
+    <div class="fb-bar warn" id="fbBar">
+      <div class="fb-dot2"></div>
+      <span id="fbTxt">Firebase wird verbunden…</span>
     </div>
 
-    <!-- Team-Namen -->
-    <div class="section-title">Teams</div>
-    <div class="grid-2">
-      <div>
-        <label>Team 1 Name</label>
-        <input type="text" id="t1name" value="Team Blau" />
-      </div>
-      <div>
-        <label>Team 2 Name</label>
-        <input type="text" id="t2name" value="Team Rot" />
-      </div>
+    <div class="sec-ttl">Teams</div>
+    <div class="g2">
+      <div><label>Team 1 Name</label><input type="text" id="t1n" value="Team Blau" /></div>
+      <div><label>Team 2 Name</label><input type="text" id="t2n" value="Team Rot"  /></div>
     </div>
 
-    <!-- Spieleinstellungen -->
-    <div class="section-title">Spieleinstellungen</div>
-    <div class="grid-2">
-      <div>
-        <label>Spielmodus</label>
-        <select id="modeSelect">
-          <option value="reveal">Aufdecken – Moderator deckt auf</option>
-          <option value="input">Tipp-Modus – Spieler tippen Antworten</option>
-        </select>
-      </div>
-      <div>
-        <label>Starten bei Frage</label>
-        <select id="startQ"></select>
-      </div>
-    </div>
+    <div class="sec-ttl">Spielmodus</div>
+    <select id="modeSel">
+      <option value="reveal">Aufdecken – Moderator deckt Antworten auf</option>
+      <option value="input">Tipp-Modus – Spieler tippen Antworten ein</option>
+    </select>
 
-    <!-- Firebase Hinweis -->
-    <div class="firebase-note">
-      <strong>Firebase einrichten:</strong> Trage deine Zugangsdaten ganz oben im
-      <code>&lt;script&gt;</code>-Block ein (<code>FIREBASE_CONFIG</code>).
-      Dann lädt jeder Spieler die gleiche URL und sieht alles synchron.<br><br>
-      <strong>Fragen ändern:</strong> Im <code>FRAGEN</code>-Array weiter unten im Code.
-      Einfach Blöcke kopieren &amp; einfügen!
-    </div>
-
-    <div style="text-align:center; margin-top:20px;">
+    <div style="text-align:center;margin-top:16px;">
       <button class="b-big" onclick="startSpiel()">SPIEL STARTEN ▶</button>
     </div>
   </div>
@@ -809,94 +782,113 @@ const DESIGN = {
 
 
 <!-- ═══════════════════════════════════════════════════════════
-     SPIEL-SCREEN – Alle Spieler sehen diesen Screen
+     KATEGORIE-AUSWAHL-SCREEN
+     Alle Spieler sehen diesen Screen und wählen eine Kategorie
+     ═══════════════════════════════════════════════════════════ -->
+<div class="screen" id="s-cats">
+  <div class="hdr"><div class="hdr-inner">
+    <div class="hdr-title" id="catsT">Family Feud</div>
+    <div class="hdr-sub"   id="catsS">Minecraft Edition</div>
+  </div></div>
+
+  <div class="sbar">
+    <div class="tblk" id="cb1">
+      <div class="tblk-name" id="c-t1n">Team 1</div>
+      <div class="tblk-pts"  id="c-t1p">0</div>
+    </div>
+    <div class="rctr">
+      <div class="rctr-lbl">Runde</div>
+      <div class="rctr-num" id="c-rnd">1</div>
+    </div>
+    <div class="tblk r" id="cb2">
+      <div class="tblk-name" id="c-t2n">Team 2</div>
+      <div class="tblk-pts"  id="c-t2p">0</div>
+    </div>
+  </div>
+
+  <div class="conn-pill"><div class="pill"><div class="pdot" id="cpDot"></div><span id="cpTxt">Verbinde…</span></div></div>
+
+  <div class="cats-wrap">
+    <div class="cats-header">
+      <div class="cats-header-title">KATEGORIE WÄHLEN</div>
+      <div class="cats-header-sub">Moderator wählt eine Kategorie aus</div>
+    </div>
+
+    <!-- Kategorie-Kacheln – werden per JS befüllt -->
+    <div class="cats-grid" id="catsGrid"></div>
+
+    <!-- Ausgewählte Kategorie / Start-Box -->
+    <div id="catSelectedBox" style="margin-top:6px;"></div>
+
+    <!-- Steuerung -->
+    <div style="display:flex; gap:8px; justify-content:center; margin-top:8px; flex-wrap:wrap;">
+      <button class="b-setup" onclick="zeigeSetup()">✎ Setup</button>
+      <button class="b-danger" onclick="pushNeuesSpiel()">↺ Neues Spiel</button>
+      <button class="b-big" onclick="pushGewinner()" style="font-size:.9rem;padding:9px 22px;">🏆 Gewinner ausrufen</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SPIEL-SCREEN
      ═══════════════════════════════════════════════════════════ -->
 <div class="screen" id="s-game">
+  <div class="hdr"><div class="hdr-inner">
+    <div class="hdr-title" id="gameT">Family Feud</div>
+    <div class="hdr-sub"   id="gameS">Minecraft Edition</div>
+  </div></div>
 
-  <!-- Header -->
-  <div class="hdr">
-    <div class="hdr-inner">
-      <div class="hdr-title" id="gameTitle">Family Feud</div>
-      <div class="hdr-sub"   id="gameSub">Minecraft Edition</div>
+  <div class="sbar">
+    <div class="tblk" id="gb1">
+      <div class="tblk-name" id="g-t1n">Team 1</div>
+      <div class="tblk-pts"  id="g-t1p">0</div>
+    </div>
+    <div class="rctr">
+      <div class="rctr-lbl">Runde</div>
+      <div class="rctr-num" id="g-rnd">1</div>
+      <div class="rctr-pot">POT: <span id="g-pot">0</span></div>
+    </div>
+    <div class="tblk r" id="gb2">
+      <div class="tblk-name" id="g-t2n">Team 2</div>
+      <div class="tblk-pts"  id="g-t2p">0</div>
     </div>
   </div>
 
-  <!-- Score-Leiste -->
-  <div class="score-bar">
-    <div class="team-block" id="tb1">
-      <div class="team-name" id="g-t1n">Team 1</div>
-      <div class="team-score-num" id="g-t1p">0</div>
-    </div>
-    <div class="round-center">
-      <div class="round-label">Runde</div>
-      <div class="round-num" id="g-rnd">1 / 1</div>
-      <div class="pot-display">POT: <span id="g-pot">0</span></div>
-    </div>
-    <div class="team-block right" id="tb2">
-      <div class="team-name" id="g-t2n">Team 2</div>
-      <div class="team-score-num" id="g-t2p">0</div>
+  <div class="conn-pill"><div class="pill"><div class="pdot" id="gpDot"></div><span id="gpTxt">Verbinde…</span></div></div>
+
+  <div class="mbadge">Modus: <span id="gMode">Aufdecken</span> &nbsp;|&nbsp; Kategorie: <span id="gKat">–</span></div>
+
+  <div class="qwrap">
+    <div class="qbox">
+      <div class="qbox-lbl">Umfrage-Frage</div>
+      <div class="qbox-cat" id="g-qcat" style="color:var(--primary)">Minecraft</div>
+      <div class="qbox-txt" id="g-qtxt">Laden…</div>
     </div>
   </div>
 
-  <!-- Verbindungs-Status -->
-  <div style="display:flex; justify-content:center; padding: 4px 0;">
-    <div class="status-pill">
-      <div class="status-dot" id="connDot"></div>
-      <span id="connText">Verbinde...</span>
-    </div>
-  </div>
+  <div class="agrid" id="g-grid"></div>
 
-  <!-- Modus-Anzeige -->
-  <div class="mode-badge">Modus: <span id="g-mode">Aufdecken</span></div>
-
-  <!-- Frage -->
-  <div class="question-wrap">
-    <div class="question-box">
-      <div class="question-label">Umfrage-Frage</div>
-      <div class="question-text" id="g-qtxt">Laden...</div>
-    </div>
-  </div>
-
-  <!-- Antwort-Kacheln -->
-  <div class="answers-grid" id="g-grid"></div>
-
-  <!-- Tipp-Eingabe (nur im Tipp-Modus sichtbar) -->
-  <div id="g-inputrow" style="display:none;">
-    <div class="input-row">
-      <input
-        class="ans-input"
-        id="g-inp"
-        type="text"
-        placeholder="Antwort eingeben und Enter drücken…"
-        autocomplete="off"
-      />
+  <div id="g-irow" style="display:none;">
+    <div class="irow">
+      <input class="ainp" id="g-inp" type="text" placeholder="Antwort eingeben und Enter drücken…" autocomplete="off" />
       <button class="b-mode" onclick="checkInput()">Prüfen ↵</button>
     </div>
-    <div class="input-result" id="g-inpResult"></div>
+    <div class="iresult" id="g-ires"></div>
   </div>
 
-  <!-- Strikes -->
-  <div class="strikes-row">
-    <div class="strike-x" id="sx1">✕</div>
-    <div class="strike-x" id="sx2">✕</div>
-    <div class="strike-x" id="sx3">✕</div>
+  <div class="strikes">
+    <div class="sx" id="sx1">✕</div>
+    <div class="sx" id="sx2">✕</div>
+    <div class="sx" id="sx3">✕</div>
   </div>
 
-  <!-- Steuerung (Moderator-Buttons) -->
-  <div class="ctrl-bar">
-    <!-- Strikes -->
+  <div class="ctrl">
     <button class="b-strike" onclick="pushStrike()">✕ Strike</button>
-
-    <!-- Punkte vergeben -->
-    <button class="b-award1" id="b-award1" onclick="pushAward(0)">🏆 → Team 1</button>
-    <button class="b-award2" id="b-award2" onclick="pushAward(1)">🏆 → Team 2</button>
-
-    <!-- Navigation -->
-    <button class="b-next"  onclick="pushNext()">Nächste Runde ▶</button>
-    <button class="b-prev"  onclick="pushPrev()">◀ Zurück</button>
-
-    <!-- Hilfsfunktionen -->
-    <button class="b-mode"  onclick="pushToggleMode()">⇄ Modus wechseln</button>
+    <button class="b-a1" id="ga1" onclick="pushAward(0)">🏆 → Team 1</button>
+    <button class="b-a2" id="ga2" onclick="pushAward(1)">🏆 → Team 2</button>
+    <button class="b-next"  onclick="pushZurueckZuKats()">◀ Kategorie wählen</button>
+    <button class="b-mode"  onclick="pushToggleMode()">⇄ Modus</button>
     <button class="b-reset" onclick="pushResetRunde()">↺ Runde reset</button>
     <button class="b-setup" onclick="zeigeSetup()">✎ Setup</button>
   </div>
@@ -907,13 +899,19 @@ const DESIGN = {
      GEWINNER-SCREEN
      ═══════════════════════════════════════════════════════════ -->
 <div class="screen" id="s-win">
-  <div class="win-card">
-    <div class="win-trophy">🏆</div>
-    <div class="win-label">Gewinner</div>
-    <div class="win-name"  id="w-name">–</div>
-    <div class="win-score" id="w-score">0 Punkte</div>
+  <!-- Konfetti-Container – wird per JS befüllt -->
+  <div class="confetti-wrap" id="confettiWrap"></div>
+
+  <div class="win-inner">
+    <div class="win-deco">Family Feud · Minecraft Edition</div>
+    <div class="win-trophy-big">🏆</div>
+    <div class="win-lbl">Gewinner</div>
+    <div class="win-name" id="w-name">–</div>
+    <div class="win-tagline">hat gewonnen!</div>
+    <div class="win-vs" id="w-vs"></div>
     <div class="win-btns">
       <button class="b-big"   onclick="pushNeuesSpiel()">Neues Spiel</button>
+      <button class="b-cats"  onclick="pushZurueckZuKats2()">Weiter spielen</button>
       <button class="b-setup" onclick="zeigeSetup()">Setup</button>
     </div>
   </div>
@@ -921,412 +919,458 @@ const DESIGN = {
 
 
 <!-- ═══════════════════════════════════════════════════════════
-     ABSCHNITT 5: SPIELLOGIK
-     Hier passiert die Magie. Nur ändern wenn du weißt was du tust!
+     SPIELLOGIK
      ═══════════════════════════════════════════════════════════ -->
 <script>
-// ── Hilfsfunktionen ───────────────────────────────────────────────────
-
-// Normalisiert Text für Vergleiche (Umlaute, Groß/Klein, Sonderzeichen)
+// ── Hilfsfunktionen ───────────────────────────────────────────
 function norm(s) {
   return s.trim().toLowerCase()
     .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
     .replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ');
 }
 
-// CSS-Variablen aus DESIGN-Objekt setzen
-function designAnwenden() {
-  const r = document.documentElement.style;
-  const f = DESIGN.farben;
-  r.setProperty('--bg',          f.hintergrund);
-  r.setProperty('--primary',     f.primary);
-  r.setProperty('--primary-dark',f.primaryDunkel);
-  r.setProperty('--card',        f.sekundaer);
-  r.setProperty('--card-hover',  f.sekundaerHell);
-  r.setProperty('--revealed',    f.aufgedeckt);
-  r.setProperty('--rev-border',  f.aufgedecktRand);
-  r.setProperty('--strike',      f.strike);
-  r.setProperty('--hdr-from',    f.headerVon);
-  r.setProperty('--hdr-to',      f.headerBis);
-  r.setProperty('--hdr-text',    f.headerText);
-  r.setProperty('--t1',          f.teamEins);
-  r.setProperty('--t2',          f.teamZwei);
-
-  // Seitentitel setzen
-  document.title = DESIGN.seitenName + ' – ' + DESIGN.untertitel;
-  document.getElementById('setupTitle').textContent = DESIGN.seitenName;
-  document.getElementById('setupSub').textContent   = DESIGN.untertitel;
-  document.getElementById('gameTitle').textContent  = DESIGN.seitenName;
-  document.getElementById('gameSub').textContent    = DESIGN.untertitel;
-}
-
-// Screen wechseln
 function zeige(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-// Flash-Animation (Richtig/Falsch)
-function flash(text, typ /* 'red' | 'green' */) {
+function flash(txt, typ) {
   const el = document.getElementById('flashEl');
-  el.textContent = text;
-  el.className = 'flash-text ' + typ;
-  void el.offsetWidth; // reflow erzwingen
-  el.classList.add('show');
+  el.textContent = txt; el.className = 'flash-el ' + typ;
+  void el.offsetWidth; el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 900);
 }
 
+function designAnwenden() {
+  const r = document.documentElement.style, f = DESIGN.farben;
+  r.setProperty('--bg',     f.hintergrund);
+  r.setProperty('--primary',f.primary);
+  r.setProperty('--card',   f.sekundaer);
+  r.setProperty('--card-h', f.sekundaerHell);
+  r.setProperty('--rev',    f.aufgedeckt);
+  r.setProperty('--rev-b',  f.aufgedecktRand);
+  r.setProperty('--strike', f.strike);
+  r.setProperty('--hf',     f.headerVon);
+  r.setProperty('--ht',     f.headerBis);
+  r.setProperty('--htxt',   f.headerText);
+  r.setProperty('--t1',     f.teamEins);
+  r.setProperty('--t2',     f.teamZwei);
+  document.title = DESIGN.seitenName + ' – ' + DESIGN.untertitel;
+  ['setupT','catsT','gameT'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = DESIGN.seitenName; });
+  ['setupS','catsS','gameS'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = DESIGN.untertitel; });
+}
 
-// ── Firebase State Management ─────────────────────────────────────────
-// Der gesamte Spielstand wird in Firebase gespeichert.
-// Wenn sich etwas ändert, bekommt jeder Client sofort ein Update.
 
-let fbReady = false;
+// ── Firebase ──────────────────────────────────────────────────
+let fbReady = false, letzterState = null;
 
-// Initialer Spielstand
-function initialerState(teamNames) {
+// Initialer State beim Spielstart
+function initialerState(teamNames, modus) {
+  // Alle Kategorien als "nicht gespielt" markieren
+  const gespielt = {};
+  KATEGORIEN.forEach(k => gespielt[k.id] = false);
   return {
-    screen:      'game',        // 'game' | 'win'
-    runde:       0,             // aktueller Fragen-Index
-    strikes:     0,             // aktuelle Strikes (0-3)
-    pot:         0,             // Punkte im Topf
-    scores:      [0, 0],        // Punkte Team 1 und 2
-    teamNames:   teamNames,     // ['Team 1', 'Team 2']
-    modus:       'reveal',      // 'reveal' | 'input'
-    aufgedeckt:  FRAGEN.map(q => new Array(q.answers.length).fill(false)),
-    aktivTeam:   0,             // welches Team gerade dran ist (0 oder 1)
-    gewinner:    -1,            // -1 = kein Gewinner, 0 oder 1 = Gewinner
+    screen:      'cats',          // 'cats' | 'game' | 'win'
+    runde:       1,               // Rundenzähler (nur anzeige)
+    scores:      [0, 0],
+    teamNames:   teamNames,
+    modus:       modus,
+    aktivTeam:   0,
+    gewinner:    -1,
+    // Kategorie-Auswahl
+    gespielt:    gespielt,        // welche Kategorien schon dran waren
+    ausgewaehlt: null,            // aktuell ausgewählte Kategorie-ID
+    // Aktuelles Spiel
+    aktKatId:    null,            // laufende Kategorie
+    strikes:     0,
+    pot:         0,
+    aufgedeckt:  {},              // { katId: [bool, bool, ...] }
   };
 }
 
-// State in Firebase schreiben
 function fbSchreibe(state) {
-  if (!fbReady) { console.warn('Firebase nicht bereit'); return; }
+  if (!fbReady) return;
   window._set(window._ref(window._db, 'spiel'), state);
 }
-
-// Einzelne Felder updaten (effizienter)
 function fbUpdate(changes) {
-  if (!fbReady) { console.warn('Firebase nicht bereit'); return; }
+  if (!fbReady) return;
   window._update(window._ref(window._db, 'spiel'), changes);
 }
-
-// Auf State-Änderungen hören und UI aktualisieren
-let letzterState = null;
 function fbHoere() {
   if (!fbReady) return;
   window._onValue(window._ref(window._db, 'spiel'), snap => {
-    const state = snap.val();
-    if (!state) return;
-    letzterState = state;
-    renderSpiel(state);
+    const s = snap.val();
+    if (!s) return;
+    letzterState = s;
+    renderState(s);
   });
 }
 
 
-// ── UI rendern ────────────────────────────────────────────────────────
-function renderSpiel(s) {
-  // Screen
-  if (s.screen === 'win') {
-    zeigeGewinner(s);
-    return;
+// ── Render ────────────────────────────────────────────────────
+function renderState(s) {
+  if (s.screen === 'win')  { renderWin(s);  return; }
+  if (s.screen === 'game') { renderSpiel(s); return; }
+  renderKats(s);
+}
+
+// Kategorie-Screen
+function renderKats(s) {
+  zeige('s-cats');
+  document.getElementById('c-t1n').textContent = s.teamNames[0];
+  document.getElementById('c-t2n').textContent = s.teamNames[1];
+  document.getElementById('c-t1p').textContent = s.scores[0];
+  document.getElementById('c-t2p').textContent = s.scores[1];
+  document.getElementById('c-rnd').textContent = s.runde;
+
+  const grid = document.getElementById('catsGrid');
+  grid.innerHTML = '';
+
+  KATEGORIEN.forEach(kat => {
+    const gespielt  = s.gespielt && s.gespielt[kat.id];
+    const selected  = s.ausgewaehlt === kat.id;
+    const tile = document.createElement('div');
+    tile.className = 'cat-tile' + (gespielt ? ' used' : '') + (selected ? ' active-cat' : '');
+    tile.style.setProperty('--cat-clr', kat.farbe);
+    if (selected) tile.style.borderColor = kat.farbe;
+
+    tile.innerHTML = `
+      <div class="cat-bar" style="background:${kat.farbe}"></div>
+      <div class="cat-emoji">${kat.emoji}</div>
+      <div class="cat-name">${kat.name}</div>
+      <div class="cat-badge${gespielt ? ' done' : ''}">${gespielt ? '✓ gespielt' : 'verfügbar'}</div>
+    `;
+    if (!gespielt) tile.onclick = () => pushWaehleKat(kat.id);
+    grid.appendChild(tile);
+  });
+
+  // Ausgewählte Kategorie Box
+  const box = document.getElementById('catSelectedBox');
+  if (s.ausgewaehlt) {
+    const kat = KATEGORIEN.find(k => k.id === s.ausgewaehlt);
+    if (kat) {
+      box.innerHTML = `
+        <div class="selected-cat-box" style="border-color:${kat.farbe}40">
+          <div class="selected-cat-emoji">${kat.emoji}</div>
+          <div class="selected-cat-info">
+            <div class="selected-cat-name" style="color:${kat.farbe}">${kat.name}</div>
+            <div class="selected-cat-frage">${kat.frage}</div>
+          </div>
+          <button class="b-start-cat" onclick="pushStartKat()">SPIELEN ▶</button>
+        </div>
+      `;
+    }
+  } else {
+    box.innerHTML = '<div class="cat-wait">← Kategorie auswählen</div>';
   }
+}
+
+// Spiel-Screen
+function renderSpiel(s) {
   zeige('s-game');
+  const kat = KATEGORIEN.find(k => k.id === s.aktKatId);
+  if (!kat) return;
 
   // Teams
   document.getElementById('g-t1n').textContent = s.teamNames[0];
   document.getElementById('g-t2n').textContent = s.teamNames[1];
   document.getElementById('g-t1p').textContent = s.scores[0];
   document.getElementById('g-t2p').textContent = s.scores[1];
-  document.getElementById('b-award1').textContent = '🏆 → ' + s.teamNames[0];
-  document.getElementById('b-award2').textContent = '🏆 → ' + s.teamNames[1];
-
-  // Aktives Team hervorheben
-  document.getElementById('tb1').classList.toggle('active', s.aktivTeam === 0);
-  document.getElementById('tb2').classList.toggle('active', s.aktivTeam === 1);
-
-  // Runde & Pot
-  document.getElementById('g-rnd').textContent = (s.runde + 1) + ' / ' + FRAGEN.length;
+  document.getElementById('g-rnd').textContent = s.runde;
   document.getElementById('g-pot').textContent = s.pot;
+  document.getElementById('ga1').textContent = '🏆 → ' + s.teamNames[0];
+  document.getElementById('ga2').textContent = '🏆 → ' + s.teamNames[1];
+  document.getElementById('gMode').textContent = s.modus === 'input' ? 'Tipp-Modus' : 'Aufdecken';
+  document.getElementById('gKat').textContent  = kat.name;
 
-  // Modus
-  document.getElementById('g-mode').textContent = s.modus === 'input' ? 'Tipp-Modus' : 'Aufdecken';
+  document.getElementById('gb1').classList.toggle('active', s.aktivTeam === 0);
+  document.getElementById('gb2').classList.toggle('active', s.aktivTeam === 1);
 
   // Frage
-  const frage = FRAGEN[s.runde];
-  document.getElementById('g-qtxt').textContent = frage.text;
-
-  // Tipp-Eingabe zeigen/verstecken
-  const inputRow = document.getElementById('g-inputrow');
-  inputRow.style.display = s.modus === 'input' ? 'block' : 'none';
+  document.getElementById('g-qcat').textContent = kat.emoji + ' ' + kat.name;
+  document.getElementById('g-qcat').style.color = kat.farbe;
+  document.getElementById('g-qtxt').textContent = kat.frage;
 
   // Strikes
-  for (let i = 1; i <= 3; i++) {
-    document.getElementById('sx' + i).classList.toggle('active', i <= s.strikes);
-  }
+  for (let i=1;i<=3;i++) document.getElementById('sx'+i).classList.toggle('on', i<=s.strikes);
 
-  // Antwort-Kacheln aufbauen
+  // Eingabe
+  document.getElementById('g-irow').style.display = s.modus === 'input' ? 'block' : 'none';
+
+  // Antwort-Tiles
+  const aufg = (s.aufgedeckt && s.aufgedeckt[s.aktKatId]) || [];
   const grid = document.getElementById('g-grid');
   grid.innerHTML = '';
-  frage.answers.forEach((a, ai) => {
-    const aufgedeckt = s.aufgedeckt[s.runde] && s.aufgedeckt[s.runde][ai];
+  kat.antworten.forEach((a, ai) => {
+    const rev = aufg[ai] === true;
     const tile = document.createElement('div');
-    tile.className = 'answer-tile' + (aufgedeckt ? ' revealed' : '');
+    tile.className = 'atile' + (rev ? ' rev' : '');
 
-    if (aufgedeckt) {
-      // Aufgedeckte Antwort anzeigen
-      tile.innerHTML =
-        '<span class="tile-num">' + (ai + 1) + '.</span>' +
-        '<span class="tile-answer">' + a.text + '</span>' +
-        '<span class="tile-pts">' + a.pts + '</span>';
+    if (rev) {
+      tile.innerHTML = `<span class="anum">${ai+1}.</span><span class="atxt">${a.text}</span><span class="apts">${a.pts}</span>`;
     } else if (s.modus === 'reveal') {
-      // Im Aufdecken-Modus: Klick deckt auf
-      tile.innerHTML =
-        '<span class="tile-num">' + (ai + 1) + '.</span>' +
-        '<span class="tile-dots">' +
-          '<span class="dot"></span><span class="dot"></span>' +
-          '<span class="dot"></span><span class="dot"></span>' +
-        '</span>';
+      tile.innerHTML = `<span class="anum">${ai+1}.</span><span class="adots"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>`;
       tile.onclick = () => pushAufdecken(ai);
     } else {
-      // Im Tipp-Modus: gesperrt (wird durch Eingabe aufgedeckt)
       tile.className += ' locked';
-      tile.innerHTML =
-        '<span class="tile-num">' + (ai + 1) + '.</span>' +
-        '<span class="tile-dots">' +
-          '<span class="dot"></span><span class="dot"></span>' +
-          '<span class="dot"></span>' +
-        '</span>';
+      tile.innerHTML = `<span class="anum">${ai+1}.</span><span class="adots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>`;
     }
     grid.appendChild(tile);
   });
 }
 
-function zeigeGewinner(s) {
-  const w = s.gewinner >= 0 ? s.gewinner
-    : (s.scores[0] >= s.scores[1] ? 0 : 1);
-  document.getElementById('w-name').textContent  = s.teamNames[w];
-  document.getElementById('w-score').textContent = s.scores[w] + ' Punkte';
+// Gewinner-Screen
+function renderWin(s) {
   zeige('s-win');
+  const w = s.gewinner >= 0 ? s.gewinner : (s.scores[0] >= s.scores[1] ? 0 : 1);
+  const l = w === 0 ? 1 : 0;
+  document.getElementById('w-name').textContent = s.teamNames[w];
+
+  // Score-Vergleich
+  document.getElementById('w-vs').innerHTML =
+    `<div class="win-team-blk winner">
+       <div class="win-tname" style="color:${w===0?'var(--t1)':'var(--t2)'}">${s.teamNames[w]}</div>
+       <div class="win-tpts"  style="color:${w===0?'var(--t1)':'var(--t2)'}">${s.scores[w]}</div>
+     </div>
+     <div class="win-vs-sep">VS</div>
+     <div class="win-team-blk">
+       <div class="win-tname">${s.teamNames[l]}</div>
+       <div class="win-tpts" style="color:rgba(255,255,255,.4)">${s.scores[l]}</div>
+     </div>`;
+
+  // Konfetti starten
+  starteKonfetti();
+}
+
+// Konfetti-Animation
+function starteKonfetti() {
+  const wrap = document.getElementById('confettiWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const farben = ['#FFD700','#FF6B00','#FF3366','#00C6FF','#7CFC00','#FF69B4','#FFF'];
+  for (let i = 0; i < 60; i++) {
+    const p = document.createElement('div');
+    p.className = 'cp';
+    const f = farben[Math.floor(Math.random() * farben.length)];
+    p.style.cssText = [
+      'left:'   + Math.random() * 100 + '%',
+      'background:' + f,
+      'width:'  + (6 + Math.random() * 10) + 'px',
+      'height:' + (6 + Math.random() * 10) + 'px',
+      'border-radius:' + (Math.random() > .5 ? '50%' : '2px'),
+      'animation-duration:' + (2 + Math.random() * 4) + 's',
+      'animation-delay:' + (Math.random() * 3) + 's',
+    ].join(';');
+    wrap.appendChild(p);
+  }
+}
+
+// Zurück zu Kategorien vom Win-Screen
+function pushZurueckZuKats2() {
+  if (!letzterState) return;
+  fbUpdate({ screen: 'cats', ausgewaehlt: null, gewinner: -1 });
+}
+
+// Verbindungsstatus aktualisieren
+function setConn(online) {
+  ['cpDot','gpDot'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.className = 'pdot' + (online ? '' : ' off');
+  });
+  ['cpTxt','gpTxt'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = online ? 'Live – synchronisiert' : 'Verbindung unterbrochen';
+  });
+  const fb = document.getElementById('fbBar');
+  if(fb) {
+    fb.className = online ? 'fb-bar ok' : 'fb-bar warn';
+    document.getElementById('fbTxt').textContent = online ? 'Firebase verbunden ✓' : 'Firebase getrennt…';
+  }
 }
 
 
-// ── Moderator-Aktionen (schreiben nach Firebase) ──────────────────────
+// ── Aktionen (Moderator schreibt nach Firebase) ───────────────
 
-// Antwort aufdecken
-function pushAufdecken(antwortIndex) {
+// Kategorie auswählen (noch nicht starten)
+function pushWaehleKat(katId) {
+  if (!letzterState) return;
+  fbUpdate({ ausgewaehlt: katId });
+}
+
+// Ausgewählte Kategorie starten
+function pushStartKat() {
   if (!letzterState) return;
   const s = letzterState;
-  // Kopie der aufgedeckten-Tabelle
-  const neu = s.aufgedeckt.map(r => [...r]);
-  if (neu[s.runde][antwortIndex]) return; // schon aufgedeckt
-  neu[s.runde][antwortIndex] = true;
-  const pts = FRAGEN[s.runde].answers[antwortIndex].pts;
+  if (!s.ausgewaehlt) return;
+  const kat = KATEGORIEN.find(k => k.id === s.ausgewaehlt);
+  if (!kat) return;
+
+  // aufgedeckt-Array für diese Kategorie anlegen
+  const aufg = { ...(s.aufgedeckt || {}) };
+  aufg[kat.id] = new Array(kat.antworten.length).fill(false);
+
+  // gespielt updaten
+  const gesp = { ...(s.gespielt || {}) };
+  gesp[kat.id] = true;
+
   fbUpdate({
-    aufgedeckt: neu,
-    pot: s.pot + pts
+    screen:      'game',
+    aktKatId:    kat.id,
+    aufgedeckt:  aufg,
+    gespielt:    gesp,
+    ausgewaehlt: null,
+    strikes:     0,
+    pot:         0,
   });
 }
 
-// Strike hinzufügen
-function pushStrike() {
+// Zurück zur Kategorie-Auswahl
+function pushZurueckZuKats() {
+  if (!letzterState) return;
+  fbUpdate({ screen: 'cats', ausgewaehlt: null });
+}
+
+// Antwort aufdecken
+function pushAufdecken(ai) {
   if (!letzterState) return;
   const s = letzterState;
-  if (s.strikes >= 3) return;
-  fbUpdate({ strikes: s.strikes + 1 });
+  const kat = KATEGORIEN.find(k => k.id === s.aktKatId);
+  if (!kat) return;
+  const aufg = { ...(s.aufgedeckt || {}) };
+  const arr  = [...(aufg[s.aktKatId] || new Array(kat.antworten.length).fill(false))];
+  if (arr[ai]) return;
+  arr[ai] = true;
+  aufg[s.aktKatId] = arr;
+  fbUpdate({ aufgedeckt: aufg, pot: s.pot + kat.antworten[ai].pts });
+}
+
+// Strike
+function pushStrike() {
+  if (!letzterState || letzterState.strikes >= 3) return;
+  fbUpdate({ strikes: letzterState.strikes + 1 });
   flash('FALSCH!', 'red');
 }
 
-// Pot an Team vergeben
-function pushAward(teamIdx) {
+// Punkte vergeben
+function pushAward(team) {
   if (!letzterState) return;
-  const s = letzterState;
-  const neueScores = [...s.scores];
-  neueScores[teamIdx] += s.pot;
+  const neu = [...letzterState.scores];
+  neu[team] += letzterState.pot;
+  // Runde hochzählen und zurück zur Kategorienauswahl
   fbUpdate({
-    scores:    neueScores,
+    scores:    neu,
     pot:       0,
-    aktivTeam: teamIdx,  // Team das Punkte bekam ist jetzt aktiv
+    aktivTeam: team,
+    runde:     letzterState.runde + 1,
+    screen:    'cats',
+    ausgewaehlt: null,
   });
-}
-
-// Nächste Runde
-function pushNext() {
-  if (!letzterState) return;
-  const s = letzterState;
-  if (s.runde >= FRAGEN.length - 1) {
-    // Letztes Spiel – Gewinner ermitteln
-    const w = s.scores[0] >= s.scores[1] ? 0 : 1;
-    fbUpdate({ screen: 'win', gewinner: w });
-    return;
-  }
-  fbUpdate({
-    runde:   s.runde + 1,
-    strikes: 0,
-    pot:     0,
-  });
-}
-
-// Vorherige Runde
-function pushPrev() {
-  if (!letzterState) return;
-  const s = letzterState;
-  if (s.runde <= 0) return;
-  fbUpdate({ runde: s.runde - 1, strikes: 0, pot: 0 });
 }
 
 // Modus wechseln
 function pushToggleMode() {
   if (!letzterState) return;
-  const neuerModus = letzterState.modus === 'reveal' ? 'input' : 'reveal';
-  fbUpdate({ modus: neuerModus });
-  if (neuerModus === 'input') {
-    setTimeout(() => {
-      const inp = document.getElementById('g-inp');
-      if (inp) inp.focus();
-    }, 100);
-  }
+  const neu = letzterState.modus === 'reveal' ? 'input' : 'reveal';
+  fbUpdate({ modus: neu });
+  if (neu === 'input') setTimeout(() => { const i = document.getElementById('g-inp'); if(i) i.focus(); }, 100);
 }
 
 // Runde zurücksetzen
 function pushResetRunde() {
   if (!letzterState) return;
   const s = letzterState;
-  const neu = s.aufgedeckt.map(r => [...r]);
-  neu[s.runde] = new Array(FRAGEN[s.runde].answers.length).fill(false);
-  fbUpdate({ aufgedeckt: neu, strikes: 0, pot: 0 });
+  const kat = KATEGORIEN.find(k => k.id === s.aktKatId);
+  if (!kat) return;
+  const aufg = { ...(s.aufgedeckt || {}) };
+  aufg[s.aktKatId] = new Array(kat.antworten.length).fill(false);
+  fbUpdate({ aufgedeckt: aufg, strikes: 0, pot: 0 });
+}
+
+// Gewinner anzeigen (manuell)
+function pushGewinner() {
+  if (!letzterState) return;
+  const s = letzterState;
+  const w = s.scores[0] >= s.scores[1] ? 0 : 1;
+  fbUpdate({ screen: 'win', gewinner: w });
 }
 
 // Neues Spiel
 function pushNeuesSpiel() {
   if (!letzterState) return;
-  const fresh = initialerState(letzterState.teamNames);
-  fbSchreibe(fresh);
+  fbSchreibe(initialerState(letzterState.teamNames, letzterState.modus));
 }
 
 
-// ── Tipp-Modus: Eingabe prüfen ────────────────────────────────────────
+// ── Tipp-Modus ────────────────────────────────────────────────
 function checkInput() {
   const inp = document.getElementById('g-inp');
-  const val = inp.value;
-  if (!val.trim() || !letzterState) return;
-
+  if (!inp.value.trim() || !letzterState) return;
   const s = letzterState;
-  const frage = FRAGEN[s.runde];
-  const eingabe = norm(val);
+  const kat = KATEGORIEN.find(k => k.id === s.aktKatId);
+  if (!kat) return;
+
+  const eingabe = norm(inp.value);
+  const aufg = (s.aufgedeckt && s.aufgedeckt[s.aktKatId]) || [];
   let gefunden = -1;
 
-  for (let ai = 0; ai < frage.answers.length; ai++) {
-    if (s.aufgedeckt[s.runde][ai]) continue; // schon aufgedeckt → überspringen
-    const kandidaten = [frage.answers[ai].text, ...(frage.answers[ai].aliases || [])].map(norm);
-    if (kandidaten.some(k => k === eingabe || k.includes(eingabe) || eingabe.includes(k))) {
-      gefunden = ai;
-      break;
+  for (let ai = 0; ai < kat.antworten.length; ai++) {
+    if (aufg[ai]) continue;
+    const cands = [kat.antworten[ai].text, ...(kat.antworten[ai].aliases || [])].map(norm);
+    if (cands.some(c => c === eingabe || c.includes(eingabe) || eingabe.includes(c))) {
+      gefunden = ai; break;
     }
   }
 
-  const resultEl = document.getElementById('g-inpResult');
-
+  const res = document.getElementById('g-ires');
   if (gefunden >= 0) {
-    // Richtig!
-    const pts = frage.answers[gefunden].pts;
     pushAufdecken(gefunden);
-    flash('+' + pts + ' PUNKTE!', 'green');
-    resultEl.style.color = '#22c55e';
-    resultEl.textContent = '✓ "' + frage.answers[gefunden].text + '" – ' + pts + ' Punkte!';
+    flash('+' + kat.antworten[gefunden].pts + '!', 'green');
+    res.style.color = '#22c55e';
+    res.textContent = '✓ "' + kat.antworten[gefunden].text + '" – ' + kat.antworten[gefunden].pts + ' Punkte!';
   } else {
-    // Falsch
     flash('FALSCH!', 'red');
-    resultEl.style.color = '#ef4444';
-    resultEl.textContent = '✗ Nicht gefunden – Strike vergeben?';
+    res.style.color = '#ef4444';
+    res.textContent = '✗ Nicht gefunden';
   }
-
-  inp.value = '';
-  inp.focus();
+  inp.value = ''; inp.focus();
 }
 
-// Enter-Taste im Tipp-Modus abfangen
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
+  if (e.key === 'Enter' && document.getElementById('s-game').classList.contains('active')) {
     const inp = document.getElementById('g-inp');
     if (document.activeElement === inp) checkInput();
   }
 });
 
 
-// ── Setup → Spiel starten ─────────────────────────────────────────────
+// ── Setup → Spiel starten ─────────────────────────────────────
 function startSpiel() {
-  const t1 = document.getElementById('t1name').value.trim() || 'Team Blau';
-  const t2 = document.getElementById('t2name').value.trim() || 'Team Rot';
-  const modus  = document.getElementById('modeSelect').value;
-  const startQ = parseInt(document.getElementById('startQ').value) || 0;
-
-  const state = initialerState([t1, t2]);
-  state.modus = modus;
-  state.runde = startQ;
-
-  fbSchreibe(state);
+  const t1    = document.getElementById('t1n').value.trim() || 'Team Blau';
+  const t2    = document.getElementById('t2n').value.trim() || 'Team Rot';
+  const modus = document.getElementById('modeSel').value;
+  fbSchreibe(initialerState([t1, t2], modus));
 }
 
-function zeigeSetup() {
-  zeige('s-setup');
-}
+function zeigeSetup() { zeige('s-setup'); }
 
 
-// ── Initialisierung ───────────────────────────────────────────────────
+// ── Initialisierung ───────────────────────────────────────────
 function init() {
-  // Design anwenden
   designAnwenden();
 
-  // Fragen-Dropdown im Setup befüllen
-  const sel = document.getElementById('startQ');
-  FRAGEN.forEach((f, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = 'Frage ' + (i + 1) + ': ' + f.text.substring(0, 48) + '…';
-    sel.appendChild(opt);
-  });
-
-  // Firebase-Status prüfen
-  if (window._firebaseReady) {
-    onFirebaseReady();
-  } else {
-    window.addEventListener('firebase-ready', onFirebaseReady);
-    // Timeout: wenn Firebase nach 4s nicht reagiert → Fehlermeldung
-    setTimeout(() => {
-      if (!fbReady) {
-        document.getElementById('fbStatus').className = 'fb-status warn';
-        document.getElementById('fbStatusText').textContent =
-          'Firebase-Verbindung fehlgeschlagen – bitte FIREBASE_CONFIG prüfen';
-      }
-    }, 4000);
+  if (window._firebaseReady) onFbReady();
+  else {
+    window.addEventListener('firebase-ready', onFbReady);
+    setTimeout(() => { if (!fbReady) setConn(false); }, 4000);
   }
 }
 
-function onFirebaseReady() {
+function onFbReady() {
   fbReady = true;
-
-  // Verbindungsstatus in Firebase überwachen
-  const connRef = window._ref(window._db, '.info/connected');
-  window._onValue(connRef, snap => {
-    const online = snap.val() === true;
-    // Setup-Screen Badge
-    document.getElementById('fbStatus').className = online ? 'fb-status ok' : 'fb-status warn';
-    document.getElementById('fbStatusText').textContent = online
-      ? 'Firebase verbunden ✓ – Synchronisation aktiv'
-      : 'Firebase getrennt – Verbindung wird wiederhergestellt…';
-    // Game-Screen Badge
-    const dot = document.getElementById('connDot');
-    if (dot) dot.className = 'status-dot' + (online ? '' : ' offline');
-    const ct = document.getElementById('connText');
-    if (ct) ct.textContent = online ? 'Live – synchronisiert' : 'Verbindung unterbrochen';
-  });
-
-  // Auf Spielstand-Änderungen hören
+  window._onValue(window._ref(window._db, '.info/connected'), snap => setConn(snap.val() === true));
   fbHoere();
 }
 
-// Starten wenn DOM bereit
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
