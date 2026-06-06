@@ -64,11 +64,12 @@ const KATEGORIEN = [
     farbe: "#16a34a",
     frage: "Nenne einen Mob, vor dem Spieler Angst haben.",
     antworten: [
-      { text: "Creeper", pts: 38, aliases: [""] },
-      { text: "Warden",    pts: 24, aliases: [""] },
-      { text: "Enderman",           pts: 17, aliases: [""] },
-      { text: "Skelett",         pts: 12, aliases: [""] },
-      { text: "Zombie",           pts:  9, aliases: [""] },
+      { text: "Creeper", pts: 45, aliases: [""] },
+      { text: "Warden",    pts: 20, aliases: ["Wächter"] },
+      { text: "Enderman",           pts: 12, aliases: [""] },
+      { text: "Skelett",         pts: 10, aliases: [""] },
+      { text: "Zombie",           pts:  8, aliases: [""] },
+      { text: "Ghast",           pts:  5, aliases: [""] },
     ]
   },
 {
@@ -76,13 +77,14 @@ const KATEGORIEN = [
     name:  "Minecraft 2",
     emoji: "⛏️",
     farbe: "#16a34a",
-    frage: "Nenne einen Gegenstand, den fast jeder zuerst in Minecraft craftet.",
+    frage: "Nenne etwas, das man in einem Dorf findet.",
     antworten: [
-      { text: "Crafting Table", pts: 38, aliases: ["werkbank", "crafting bench"] },
-      { text: "Holzschwert",    pts: 24, aliases: ["wooden sword", "schwert"] },
-      { text: "Bett",           pts: 17, aliases: ["bed"] },
-      { text: "Fackel",         pts: 12, aliases: ["torch"] },
-      { text: "Ofen",           pts:  9, aliases: ["furnace"] },
+      { text: "Dorfbewohner", pts: 35, aliases: ["Villiger"] },
+      { text: "Betten",    pts: 20, aliases: [""] },
+      { text: "Eisen-Golem",           pts: 18, aliases: [""] },
+      { text: "Farmen",         pts: 12, aliases: [""] },
+      { text: "Truhen",           pts:  10, aliases: [""] },
+      { text: "Glocke",           pts:  5, aliases: [""] },
     ]
   },
 
@@ -92,13 +94,29 @@ const KATEGORIEN = [
     name:  "Allgemeinwissen",
     emoji: "🧠",
     farbe: "#2563eb",
-    frage: "Nenne ein Land, das die meisten Leute zuerst auf einer Weltkarte suchen.",
+    frage: "Nenne ein Land, das die meisten Leute zuerst auf einer Weltkarte suchen.(Deutsche)",
     antworten: [
       { text: "Deutschland", pts: 35, aliases: ["germany"] },
       { text: "USA",         pts: 28, aliases: ["america", "vereinigte staaten"] },
       { text: "Frankreich",  pts: 16, aliases: ["france"] },
       { text: "China",       pts: 13, aliases: [] },
       { text: "Australien",  pts:  8, aliases: ["australia"] },
+    ]
+  },
+
+{
+    id:    "allgemein2",
+    name:  "Allgemeinwissen 2",
+    emoji: "🧠",
+    farbe: "#2563eb",
+    frage: "Nenne ein Tier, das Menschen als Haustier halten.",
+    antworten: [
+      { text: "Hund", pts: 35, aliases: [""] },
+      { text: "Katze",         pts: 28, aliases: [""] },
+      { text: "Hamster",  pts: 16, aliases: [""] },
+      { text: "Kaninchen",       pts: 13, aliases: [] },
+      { text: "Fisch",  pts:  8, aliases: [""] },
+      { text: "Vogel",  pts:  8, aliases: [""] },
     ]
   },
 
@@ -115,6 +133,36 @@ const KATEGORIEN = [
       { text: "Thor",        pts: 15, aliases: [] },
       { text: "Hulk",        pts: 10, aliases: ["bruce banner"] },
       { text: "Captain America", pts: 7, aliases: ["cap"] },
+    ]
+  },
+
+  {
+    id:    "popkultur2",
+    name:  "Popkultur 2",
+    emoji: "🎬",
+    farbe: "#7c3aed",
+    frage: "Nenne ein Pokémon, das fast jeder kennt.",
+    antworten: [
+      { text: "Pikachu",  pts: 40, aliases: [""] },
+      { text: "Glurak",    pts: 28, aliases: [""] },
+      { text: "Mewtu",        pts: 15, aliases: [] },
+      { text: "Evoli",        pts: 10, aliases: [""] },
+      { text: "Schiggy", pts: 7, aliases: [""] },
+    ]
+  },
+
+  {
+    id:    "musik",
+    name:  "Musik",
+    emoji: "🎵",
+    farbe: "#7c3aed",
+    frage: "Nenne ein Musikinstrument.",
+    antworten: [
+      { text: "Gitarre",  pts: 40, aliases: ["spiderman", "peter parker"] },
+      { text: "Klavier",    pts: 28, aliases: ["ironman", "tony stark"] },
+      { text: "Schlagzeug",        pts: 15, aliases: [] },
+      { text: "Violine",        pts: 10, aliases: ["bruce banner"] },
+      { text: "Flöte", pts: 7, aliases: ["cap"] },
     ]
   },
 
@@ -150,37 +198,7 @@ const KATEGORIEN = [
     ]
   },
 
-  // ── MUSIK ────────────────────────────────────────────────────
-  {
-    id:    "musik",
-    name:  "Musik",
-    emoji: "🎵",
-    farbe: "#db2777",
-    frage: "Nenne einen Musik-Streaming-Dienst, den die meisten Leute nutzen.",
-    antworten: [
-      { text: "Spotify",        pts: 50, aliases: [] },
-      { text: "YouTube Music",  pts: 22, aliases: ["youtube"] },
-      { text: "Apple Music",    pts: 16, aliases: [] },
-      { text: "Amazon Music",   pts:  8, aliases: [] },
-      { text: "Deezer",         pts:  4, aliases: [] },
-    ]
-  },
-
-  // ── TIERE ────────────────────────────────────────────────────
-  {
-    id:    "tiere",
-    name:  "Tiere",
-    emoji: "🐾",
-    farbe: "#b45309",
-    frage: "Nenne ein Haustier, das die meisten Deutschen haben.",
-    antworten: [
-      { text: "Hund",    pts: 42, aliases: ["dog"] },
-      { text: "Katze",   pts: 36, aliases: ["cat"] },
-      { text: "Fisch",   pts: 10, aliases: ["goldfisch"] },
-      { text: "Vogel",   pts:  8, aliases: ["papagei", "wellensittich"] },
-      { text: "Hamster", pts:  4, aliases: [] },
-    ]
-  },
+ 
 
   // ── TECHNOLOGIE ──────────────────────────────────────────────
   {
@@ -1345,8 +1363,8 @@ document.addEventListener('keydown', e => {
 
 // ── Setup → Spiel starten ─────────────────────────────────────
 function startSpiel() {
-  const t1    = document.getElementById('t1n').value.trim() || 'Team Blau';
-  const t2    = document.getElementById('t2n').value.trim() || 'Team Rot';
+  const t1    = document.getElementById('t1n').value.trim() || 'Team B';
+  const t2    = document.getElementById('t2n').value.trim() || 'Team A';
   const modus = document.getElementById('modeSel').value;
   fbSchreibe(initialerState([t1, t2], modus));
 }
