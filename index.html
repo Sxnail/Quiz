@@ -759,6 +759,9 @@ select option { background:#1a1a3e; }
 }
 
 .win-btns { display:flex; gap:10px; justify-content:center; animation:nameSlide .7s ease .9s both; }
+
+.tblk-pts { display:none !important; }
+.rctr-pot { display:none !important; }
 </style>
 </head>
 <body>
@@ -782,8 +785,8 @@ select option { background:#1a1a3e; }
 
     <div class="sec-ttl">Teams</div>
     <div class="g2">
-      <div><label>Team 1 Name</label><input type="text" id="t1n" value="Team Blau" /></div>
-      <div><label>Team 2 Name</label><input type="text" id="t2n" value="Team Rot"  /></div>
+      <div><label>Team 1 Name</label><input type="text" id="t1n" value="Team B" /></div>
+      <div><label>Team 2 Name</label><input type="text" id="t2n" value="Team R"  /></div>
     </div>
 
     <div class="sec-ttl">Spielmodus</div>
@@ -812,7 +815,6 @@ select option { background:#1a1a3e; }
   <div class="sbar">
     <div class="tblk" id="cb1">
       <div class="tblk-name" id="c-t1n">Team 1</div>
-      <div class="tblk-pts"  id="c-t1p">0</div>
     </div>
     <div class="rctr">
       <div class="rctr-lbl">Runde</div>
@@ -820,7 +822,6 @@ select option { background:#1a1a3e; }
     </div>
     <div class="tblk r" id="cb2">
       <div class="tblk-name" id="c-t2n">Team 2</div>
-      <div class="tblk-pts"  id="c-t2p">0</div>
     </div>
   </div>
 
@@ -860,16 +861,13 @@ select option { background:#1a1a3e; }
   <div class="sbar">
     <div class="tblk" id="gb1">
       <div class="tblk-name" id="g-t1n">Team 1</div>
-      <div class="tblk-pts"  id="g-t1p">0</div>
     </div>
     <div class="rctr">
       <div class="rctr-lbl">Runde</div>
       <div class="rctr-num" id="g-rnd">1</div>
-      <div class="rctr-pot">POT: <span id="g-pot">0</span></div>
     </div>
     <div class="tblk r" id="gb2">
       <div class="tblk-name" id="g-t2n">Team 2</div>
-      <div class="tblk-pts"  id="g-t2p">0</div>
     </div>
   </div>
 
@@ -903,8 +901,6 @@ select option { background:#1a1a3e; }
 
   <div class="ctrl">
     <button class="b-strike" onclick="pushStrike()">✕ Strike</button>
-    <button class="b-a1" id="ga1" onclick="pushAward(0)">🏆 → Team 1</button>
-    <button class="b-a2" id="ga2" onclick="pushAward(1)">🏆 → Team 2</button>
     <button class="b-next"  onclick="pushZurueckZuKats()">◀ Kategorie wählen</button>
     <button class="b-mode"  onclick="pushToggleMode()">⇄ Modus</button>
     <button class="b-reset" onclick="pushResetRunde()">↺ Runde reset</button>
@@ -1037,8 +1033,6 @@ function renderKats(s) {
   zeige('s-cats');
   document.getElementById('c-t1n').textContent = s.teamNames[0];
   document.getElementById('c-t2n').textContent = s.teamNames[1];
-  document.getElementById('c-t1p').textContent = s.scores[0];
-  document.getElementById('c-t2p').textContent = s.scores[1];
   document.getElementById('c-rnd').textContent = s.runde;
 
   const grid = document.getElementById('catsGrid');
@@ -1096,8 +1090,6 @@ function renderSpiel(s) {
   document.getElementById('g-t2p').textContent = s.scores[1];
   document.getElementById('g-rnd').textContent = s.runde;
   document.getElementById('g-pot').textContent = s.pot;
-  document.getElementById('ga1').textContent = '🏆 → ' + s.teamNames[0];
-  document.getElementById('ga2').textContent = '🏆 → ' + s.teamNames[1];
   document.getElementById('gMode').textContent = s.modus === 'input' ? 'Tipp-Modus' : 'Aufdecken';
   document.getElementById('gKat').textContent  = kat.name;
 
@@ -1144,16 +1136,14 @@ function renderWin(s) {
   const l = w === 0 ? 1 : 0;
   document.getElementById('w-name').textContent = s.teamNames[w];
 
-  // Score-Vergleich
+  // Verlierer anzeigen (ohne Punkte)
   document.getElementById('w-vs').innerHTML =
     `<div class="win-team-blk winner">
-       <div class="win-tname" style="color:${w===0?'var(--t1)':'var(--t2)'}">${s.teamNames[w]}</div>
-       <div class="win-tpts"  style="color:${w===0?'var(--t1)':'var(--t2)'}">${s.scores[w]}</div>
+       <div class="win-tname" style="color:${w===0?'var(--t1)':'var(--t2)'}; font-size:1rem; opacity:1">${s.teamNames[w]}</div>
      </div>
      <div class="win-vs-sep">VS</div>
      <div class="win-team-blk">
-       <div class="win-tname">${s.teamNames[l]}</div>
-       <div class="win-tpts" style="color:rgba(255,255,255,.4)">${s.scores[l]}</div>
+       <div class="win-tname" style="opacity:.4">${s.teamNames[l]}</div>
      </div>`;
 
   // Konfetti starten
@@ -1259,7 +1249,7 @@ function pushAufdecken(ai) {
   if (arr[ai]) return;
   arr[ai] = true;
   aufg[s.aktKatId] = arr;
-  fbUpdate({ aufgedeckt: aufg, pot: s.pot + kat.antworten[ai].pts });
+  fbUpdate({ aufgedeckt: aufg });
 }
 
 // Strike
@@ -1272,11 +1262,7 @@ function pushStrike() {
 // Punkte vergeben
 function pushAward(team) {
   if (!letzterState) return;
-  const neu = [...letzterState.scores];
-  neu[team] += letzterState.pot;
-  // Runde hochzählen und zurück zur Kategorienauswahl
   fbUpdate({
-    scores:    neu,
     pot:       0,
     aktivTeam: team,
     runde:     letzterState.runde + 1,
@@ -1364,7 +1350,7 @@ document.addEventListener('keydown', e => {
 // ── Setup → Spiel starten ─────────────────────────────────────
 function startSpiel() {
   const t1    = document.getElementById('t1n').value.trim() || 'Team B';
-  const t2    = document.getElementById('t2n').value.trim() || 'Team A';
+  const t2    = document.getElementById('t2n').value.trim() || 'Team R';
   const modus = document.getElementById('modeSel').value;
   fbSchreibe(initialerState([t1, t2], modus));
 }
