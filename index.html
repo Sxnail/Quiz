@@ -762,6 +762,47 @@ select option { background:#1a1a3e; }
 
 /* Punkte ausgeblendet */
 .tblk-pts, .rctr-pot { display:none !important; }
+
+/* ── Gewinner-Picker Modal ── */
+.modal-ov {
+  display:none; position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,.8); backdrop-filter:blur(6px);
+  align-items:center; justify-content:center;
+}
+.modal-ov.open { display:flex; }
+.modal-box {
+  background:#111128; border:1.5px solid rgba(255,215,0,.35);
+  border-radius:14px; padding:32px 28px; max-width:440px; width:90%;
+  text-align:center;
+}
+.modal-title {
+  font-family:'Bebas Neue',sans-serif; font-size:1.8rem;
+  letter-spacing:4px; color:var(--primary); margin-bottom:4px;
+}
+.modal-sub {
+  font-family:'Barlow Condensed',sans-serif; font-size:.85rem;
+  letter-spacing:2px; text-transform:uppercase;
+  color:rgba(255,255,255,.35); margin-bottom:24px;
+}
+.picker-btns { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+.b-pick-t1, .b-pick-t2 {
+  font-family:'Bebas Neue',sans-serif; font-size:1.5rem;
+  letter-spacing:3px; padding:18px 10px;
+  border:none; border-radius:8px; cursor:pointer;
+  transition:filter .15s, transform .1s;
+  color:#fff;
+}
+.b-pick-t1 { background:var(--t1); }
+.b-pick-t2 { background:var(--t2); }
+.b-pick-t1:hover, .b-pick-t2:hover { filter:brightness(1.2); transform:translateY(-3px); }
+.b-pick-cancel {
+  background:transparent; border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.4); padding:8px 24px;
+  font-family:'Barlow Condensed',sans-serif; font-size:.9rem;
+  letter-spacing:2px; text-transform:uppercase;
+  border-radius:5px; cursor:pointer;
+}
+.b-pick-cancel:hover { color:#fff; border-color:rgba(255,255,255,.4); }
 </style>
 </head>
 <body>
@@ -845,7 +886,7 @@ select option { background:#1a1a3e; }
     <div style="display:flex; gap:8px; justify-content:center; margin-top:8px; flex-wrap:wrap;">
       <button class="b-setup" onclick="zeigeSetup()">✎ Setup</button>
       <button class="b-danger" onclick="pushNeuesSpiel()">↺ Neues Spiel</button>
-      <button class="b-big" onclick="pushGewinner()" style="font-size:.9rem;padding:9px 22px;">🏆 Gewinner ausrufen</button>
+      <button class="b-big" onclick="zeigeGewinnerPicker()" style="font-size:.9rem;padding:9px 22px;">🏆 Gewinner ausrufen</button>
     </div>
   </div>
 </div>
@@ -1303,12 +1344,30 @@ function pushResetRunde() {
   fbUpdate({ aufgedeckt: aufg, strikes: 0 });
 }
 
-// Gewinner anzeigen (manuell)
-function pushGewinner() {
+// Gewinner-Picker öffnen
+function zeigeGewinnerPicker() {
   if (!letzterState) return;
   const s = letzterState;
-  const w = s.scores[0] >= s.scores[1] ? 0 : 1;
-  fbUpdate({ screen: 'win', gewinner: w });
+  document.getElementById('pickT1').textContent = s.teamNames[0];
+  document.getElementById('pickT2').textContent = s.teamNames[1];
+  document.getElementById('modalSub').textContent = s.teamNames[0] + ' vs ' + s.teamNames[1];
+  document.getElementById('gewinnerModal').classList.add('open');
+}
+
+function schliesseModal() {
+  document.getElementById('gewinnerModal').classList.remove('open');
+}
+
+// Gewinner manuell festlegen und Screen wechseln
+function pushGewinnerTeam(teamIdx) {
+  schliesseModal();
+  if (!letzterState) return;
+  fbUpdate({ screen: 'win', gewinner: teamIdx });
+}
+
+// pushGewinner nicht mehr direkt aufgerufen
+function pushGewinner() {
+  zeigeGewinnerPicker();
 }
 
 // Neues Spiel
@@ -1391,5 +1450,18 @@ function onFbReady() {
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
+
+<!-- Gewinner-Picker Modal -->
+<div class="modal-ov" id="gewinnerModal">
+  <div class="modal-box">
+    <div class="modal-title">Wer hat gewonnen?</div>
+    <div class="modal-sub" id="modalSub">Team auswählen</div>
+    <div class="picker-btns">
+      <button class="b-pick-t1" id="pickT1" onclick="pushGewinnerTeam(0)">Team B</button>
+      <button class="b-pick-t2" id="pickT2" onclick="pushGewinnerTeam(1)">Team R</button>
+    </div>
+    <button class="b-pick-cancel" onclick="schliesseModal()">Abbrechen</button>
+  </div>
+</div>
 </body>
 </html>
