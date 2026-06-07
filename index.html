@@ -760,8 +760,8 @@ select option { background:#1a1a3e; }
 
 .win-btns { display:flex; gap:10px; justify-content:center; animation:nameSlide .7s ease .9s both; }
 
-.tblk-pts { display:none !important; }
-.rctr-pot { display:none !important; }
+/* Punkte ausgeblendet */
+.tblk-pts, .rctr-pot { display:none !important; }
 </style>
 </head>
 <body>
@@ -815,6 +815,7 @@ select option { background:#1a1a3e; }
   <div class="sbar">
     <div class="tblk" id="cb1">
       <div class="tblk-name" id="c-t1n">Team 1</div>
+      <div class="tblk-pts"  id="c-t1p">0</div>
     </div>
     <div class="rctr">
       <div class="rctr-lbl">Runde</div>
@@ -822,6 +823,7 @@ select option { background:#1a1a3e; }
     </div>
     <div class="tblk r" id="cb2">
       <div class="tblk-name" id="c-t2n">Team 2</div>
+      <div class="tblk-pts"  id="c-t2p">0</div>
     </div>
   </div>
 
@@ -861,13 +863,16 @@ select option { background:#1a1a3e; }
   <div class="sbar">
     <div class="tblk" id="gb1">
       <div class="tblk-name" id="g-t1n">Team 1</div>
+      <div class="tblk-pts"  id="g-t1p">0</div>
     </div>
     <div class="rctr">
       <div class="rctr-lbl">Runde</div>
       <div class="rctr-num" id="g-rnd">1</div>
+      <div class="rctr-pot">POT: <span id="g-pot">0</span></div>
     </div>
     <div class="tblk r" id="gb2">
       <div class="tblk-name" id="g-t2n">Team 2</div>
+      <div class="tblk-pts"  id="g-t2p">0</div>
     </div>
   </div>
 
@@ -901,9 +906,11 @@ select option { background:#1a1a3e; }
 
   <div class="ctrl">
     <button class="b-strike" onclick="pushStrike()">✕ Strike</button>
-    <button class="b-next"  onclick="pushZurueckZuKats()">◀ Kategorie wählen</button>
+    <button class="b-a1" id="ga1" onclick="pushAward(0)">✓ Runde → Team B</button>
+    <button class="b-a2" id="ga2" onclick="pushAward(1)">✓ Runde → Team R</button>
+    <button class="b-next"  onclick="pushZurueckZuKats()">◀ Abbrechen</button>
     <button class="b-mode"  onclick="pushToggleMode()">⇄ Modus</button>
-    <button class="b-reset" onclick="pushResetRunde()">↺ Runde reset</button>
+    <button class="b-reset" onclick="pushResetRunde()">↺ Reset</button>
     <button class="b-setup" onclick="zeigeSetup()">✎ Setup</button>
   </div>
 </div>
@@ -1033,6 +1040,8 @@ function renderKats(s) {
   zeige('s-cats');
   document.getElementById('c-t1n').textContent = s.teamNames[0];
   document.getElementById('c-t2n').textContent = s.teamNames[1];
+  document.getElementById('c-t1p').textContent = s.scores[0];
+  document.getElementById('c-t2p').textContent = s.scores[1];
   document.getElementById('c-rnd').textContent = s.runde;
 
   const grid = document.getElementById('catsGrid');
@@ -1090,6 +1099,8 @@ function renderSpiel(s) {
   document.getElementById('g-t2p').textContent = s.scores[1];
   document.getElementById('g-rnd').textContent = s.runde;
   document.getElementById('g-pot').textContent = s.pot;
+  const ga1 = document.getElementById('ga1'); if(ga1) ga1.textContent = '✓ Runde → ' + s.teamNames[0];
+  const ga2 = document.getElementById('ga2'); if(ga2) ga2.textContent = '✓ Runde → ' + s.teamNames[1];
   document.getElementById('gMode').textContent = s.modus === 'input' ? 'Tipp-Modus' : 'Aufdecken';
   document.getElementById('gKat').textContent  = kat.name;
 
@@ -1107,8 +1118,9 @@ function renderSpiel(s) {
   // Eingabe
   document.getElementById('g-irow').style.display = s.modus === 'input' ? 'block' : 'none';
 
-  // Antwort-Tiles
-  const aufg = (s.aufgedeckt && s.aufgedeckt[s.aktKatId]) || [];
+  // Antwort-Tiles – Firebase gibt Arrays als Objekte → in Array umwandeln
+  const rawAufg = (s.aufgedeckt && s.aufgedeckt[s.aktKatId]) || {};
+  const aufg = Array.from({ length: kat.antworten.length }, (_, i) => rawAufg[i] === true);
   const grid = document.getElementById('g-grid');
   grid.innerHTML = '';
   kat.antworten.forEach((a, ai) => {
@@ -1136,10 +1148,10 @@ function renderWin(s) {
   const l = w === 0 ? 1 : 0;
   document.getElementById('w-name').textContent = s.teamNames[w];
 
-  // Verlierer anzeigen (ohne Punkte)
+  // Score-Vergleich
   document.getElementById('w-vs').innerHTML =
     `<div class="win-team-blk winner">
-       <div class="win-tname" style="color:${w===0?'var(--t1)':'var(--t2)'}; font-size:1rem; opacity:1">${s.teamNames[w]}</div>
+       <div class="win-tname" style="color:${w===0?'var(--t1)':'var(--t2)'}; font-size:1.1rem; opacity:1; letter-spacing:3px">${s.teamNames[w]}</div>
      </div>
      <div class="win-vs-sep">VS</div>
      <div class="win-team-blk">
@@ -1249,7 +1261,7 @@ function pushAufdecken(ai) {
   if (arr[ai]) return;
   arr[ai] = true;
   aufg[s.aktKatId] = arr;
-  fbUpdate({ aufgedeckt: aufg });
+  fbUpdate({ aufgedeckt: aufg, pot: s.pot + kat.antworten[ai].pts });
 }
 
 // Strike
@@ -1262,11 +1274,12 @@ function pushStrike() {
 // Punkte vergeben
 function pushAward(team) {
   if (!letzterState) return;
+  // Runde wechseln, kein Punktetracking
   fbUpdate({
-    pot:       0,
-    aktivTeam: team,
-    runde:     letzterState.runde + 1,
-    screen:    'cats',
+    pot:         0,
+    aktivTeam:   team,
+    runde:       letzterState.runde + 1,
+    screen:      'cats',
     ausgewaehlt: null,
   });
 }
@@ -1287,7 +1300,7 @@ function pushResetRunde() {
   if (!kat) return;
   const aufg = { ...(s.aufgedeckt || {}) };
   aufg[s.aktKatId] = new Array(kat.antworten.length).fill(false);
-  fbUpdate({ aufgedeckt: aufg, strikes: 0, pot: 0 });
+  fbUpdate({ aufgedeckt: aufg, strikes: 0 });
 }
 
 // Gewinner anzeigen (manuell)
@@ -1314,7 +1327,8 @@ function checkInput() {
   if (!kat) return;
 
   const eingabe = norm(inp.value);
-  const aufg = (s.aufgedeckt && s.aufgedeckt[s.aktKatId]) || [];
+  const rawC = (s.aufgedeckt && s.aufgedeckt[s.aktKatId]) || {};
+  const aufg = Array.from({ length: kat.antworten.length }, (_, i) => rawC[i] === true);
   let gefunden = -1;
 
   for (let ai = 0; ai < kat.antworten.length; ai++) {
